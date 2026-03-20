@@ -32,6 +32,25 @@ export interface CreateClient {
   address?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  size?: string;
+  color?: string;
+  sku: string;
+  price: number;
+  stock: number;
+  isActive: boolean;
+}
+
+export interface CreateProductVariant {
+  size?: string;
+  color?: string;
+  sku: string;
+  price: number;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -45,6 +64,7 @@ export interface Product {
   isActive: boolean;
   lowStock: boolean;
   createdAt: string;
+  variants: ProductVariant[];
 }
 
 export interface CreateProduct {
@@ -56,6 +76,7 @@ export interface CreateProduct {
   stock: number;
   minStock: number;
   category?: string;
+  variants?: CreateProductVariant[];
 }
 
 export interface UpdateProduct {
@@ -67,6 +88,7 @@ export interface UpdateProduct {
   minStock: number;
   category?: string;
   isActive: boolean;
+  variants?: CreateProductVariant[];
 }
 
 export interface Supplier {
