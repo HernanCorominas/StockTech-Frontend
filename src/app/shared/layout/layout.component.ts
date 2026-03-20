@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthStateService } from '../../core/services/auth-state.service';
 
@@ -106,9 +106,9 @@ import { AuthStateService } from '../../core/services/auth-state.service';
     <!-- User Footer -->
     <div class="sidebar__footer">
       <div class="sidebar__user">
-        <div class="sidebar__avatar">{{ username.charAt(0).toUpperCase() }}</div>
+        <div class="sidebar__avatar">{{ userInitials() }}</div>
         <div class="sidebar__user-info">
-          <div class="sidebar__username">{{ username }}</div>
+          <div class="sidebar__username">{{ username() }}</div>
           <div class="sidebar__role">Administrador</div>
         </div>
       </div>
@@ -311,7 +311,11 @@ import { AuthStateService } from '../../core/services/auth-state.service';
   `]
 })
 export class LayoutComponent {
-  username = this.authState.getUser()?.username ?? 'Usuario';
+  username = computed(() => this.authState.currentUser()?.username ?? 'Usuario');
+  userInitials = computed(() => this.username().charAt(0).toUpperCase());
+
   constructor(private authState: AuthStateService) {}
+  
   logout() { this.authState.logout(); }
 }
+

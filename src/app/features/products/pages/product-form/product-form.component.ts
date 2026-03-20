@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
+import { AnimationService } from '../../../../core/services/animation.service';
 import { Product, CreateProduct, UpdateProduct, CreateProductVariant } from '../../../../core/models/models';
 import { VariantEditorComponent } from '../../components/variant-editor/variant-editor.component';
 
@@ -11,7 +12,7 @@ import { VariantEditorComponent } from '../../components/variant-editor/variant-
   imports: [CommonModule, FormsModule, VariantEditorComponent],
   template: `
 <div class="modal-overlay" (click)="onCancel.emit()">
-  <div class="modal" (click)="$event.stopPropagation()" style="max-width: 800px">
+  <div class="modal" (click)="$event.stopPropagation()" #modal style="max-width: 800px">
     <h3>{{ editProduct ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
     <div *ngIf="error" class="alert alert--error">{{ error }}</div>
 
@@ -68,10 +69,12 @@ import { VariantEditorComponent } from '../../components/variant-editor/variant-
 </div>
   `
 })
-export class ProductFormComponent {
+export class ProductFormComponent implements OnInit, AfterViewInit {
   @Input() editProduct: Product | null = null;
   @Output() onSave = new EventEmitter<void>();
   @Output() onCancel = new EventEmitter<void>();
+
+  @ViewChild('modal') modal!: ElementRef;
 
   form: any = { 
     name: '', sku: '', description: '', price: 0, cost: 0, stock: 0, minStock: 0, category: '', isActive: true,
@@ -81,7 +84,10 @@ export class ProductFormComponent {
   saving = false;
   error = '';
 
-  constructor(private productService: ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private anime: AnimationService
+  ) {}
 
   ngOnInit() {
     if (this.editProduct) {
@@ -90,6 +96,12 @@ export class ProductFormComponent {
         variants: this.editProduct.variants?.map(v => ({...v})) || []
       };
     }
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.anime.modalIn(this.modal.nativeElement);
+    }, 0);
   }
 
   save(): void {

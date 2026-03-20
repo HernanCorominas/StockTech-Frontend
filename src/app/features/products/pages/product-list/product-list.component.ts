@@ -1,7 +1,8 @@
-import { Component, OnInit, EventEmitter, Output } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
+import { AnimationService } from '../../../../core/services/animation.service';
 import { Product, InventoryTransaction } from '../../../../core/models/models';
 
 @Component({
@@ -9,7 +10,7 @@ import { Product, InventoryTransaction } from '../../../../core/models/models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-<div class="page-header">
+<div class="page-header" #header>
     <div>
       <h1>Inventario</h1>
       <p>{{ totalCount }} productos totales</p>
@@ -37,7 +38,7 @@ import { Product, InventoryTransaction } from '../../../../core/models/models';
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of products">
+        <tr *ngFor="let p of products" #row>
           <td class="fw-semibold">{{ p.name }}</td>
           <td class="font-mono text-muted">{{ p.sku || '—' }}</td>
           <td>{{ p.category || '—' }}</td>
@@ -49,9 +50,9 @@ import { Product, InventoryTransaction } from '../../../../core/models/models';
             </span>
           </td>
           <td style="display:flex; gap:4px">
-            <button class="btn btn--secondary" style="padding:6px 12px;font-size:0.8rem" (click)="onEdit.emit(p)">Editar</button>
-            <button class="btn btn--accent" style="padding:6px 12px;font-size:0.8rem" (click)="openKardex(p)">Historial</button>
-            <button class="btn btn--danger" style="padding:6px 12px;font-size:0.8rem" (click)="delete(p.id)">Eliminar</button>
+            <button class="btn btn--secondary btn--sm" (click)="onEdit.emit(p)">Editar</button>
+            <button class="btn btn--accent btn--sm" (click)="openKardex(p)">Historial</button>
+            <button class="btn btn--danger btn--sm" (click)="delete(p.id)">Eliminar</button>
           </td>
         </tr>
         <tr *ngIf="products.length === 0">
@@ -59,18 +60,18 @@ import { Product, InventoryTransaction } from '../../../../core/models/models';
         </tr>
       </tbody>
     </table>
-    <div style="display: flex; justify-content: space-between; padding: 16px; align-items: center; border-top: 1px solid #ddd">
+    <div style="display: flex; justify-content: space-between; padding: 16px; align-items: center; border-top: 1px solid var(--border)">
       <span class="text-muted" style="font-size: 0.9rem">Mostrando página {{ page }}</span>
       <div style="display: flex; gap: 8px">
-        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
-        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="products.length < pageSize" (click)="load(page + 1)">Siguiente</button>
+        <button class="btn btn--secondary btn--sm" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+        <button class="btn btn--secondary btn--sm" [disabled]="products.length < pageSize" (click)="load(page + 1)">Siguiente</button>
       </div>
     </div>
   </div>
 
-<!-- Kardex Modal (Simplified for now) -->
+<!-- Kardex Modal -->
 <div class="modal-overlay" *ngIf="showKardexModal" (click)="showKardexModal = false">
-  <div class="modal modal--lg" (click)="$event.stopPropagation()" style="max-width: 900px">
+  <div class="modal modal--lg" (click)="$event.stopPropagation()" #kardexModal style="max-width: 900px">
     <h3>Historial: {{ selectedProductName }}</h3>
     <table class="data-table">
         <thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Prev</th><th>Cant</th><th>Nuevo</th></tr></thead>
@@ -94,6 +95,9 @@ export class ProductListComponent implements OnInit {
   @Output() onCreate = new EventEmitter<void>();
   @Output() onEdit = new EventEmitter<Product>();
 
+  @ViewChildren('row') rows!: QueryList<ElementRef>;
+  @ViewChildren('kardexModal') kardexModal!: QueryList<ElementRef>;
+
   products: Product[] = [];
   loading = true;
   page = 1;
@@ -105,7 +109,10 @@ export class ProductListComponent implements OnInit {
   selectedProductName = '';
   kardexEntries: InventoryTransaction[] = [];
 
-  constructor(private productService: ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private anime: AnimationService
+  ) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -117,6 +124,10 @@ export class ProductListComponent implements OnInit {
         this.products = res.items;
         this.totalCount = res.totalCount;
         this.loading = false;
+        // Animate rows after render
+        setTimeout(() => {
+          this.anime.staggerIn(this.rows.map(r => r.nativeElement));
+        }, 0);
       },
       error: () => this.loading = false
     });
@@ -125,7 +136,14 @@ export class ProductListComponent implements OnInit {
   openKardex(p: Product): void {
     this.selectedProductName = p.name;
     this.showKardexModal = true;
-    this.productService.getKardex(p.id).subscribe(res => this.kardexEntries = res);
+    this.productService.getKardex(p.id).subscribe(res => {
+        this.kardexEntries = res;
+        setTimeout(() => {
+            if (this.kardexModal.first) {
+                this.anime.modalIn(this.kardexModal.first.nativeElement);
+            }
+        }, 0);
+    });
   }
 
   delete(id: string): void {
