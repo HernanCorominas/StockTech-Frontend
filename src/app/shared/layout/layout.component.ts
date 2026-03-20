@@ -103,6 +103,16 @@ import { AnimationService } from '../../core/services/animation.service';
         </svg>
         <span>Reportes</span>
       </a>
+
+      <div *appHasPermission="'user:read'">
+        <div class="sidebar__section-label" style="margin-top:14px">Configuración</div>
+        <a routerLink="/users" routerLinkActive="active" class="sidebar__link">
+          <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 18a8 8 0 1116 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Usuarios</span>
+        </a>
+      </div>
     </nav>
 
     <!-- User Footer -->
@@ -111,7 +121,7 @@ import { AnimationService } from '../../core/services/animation.service';
         <div class="sidebar__avatar">{{ userInitials() }}</div>
         <div class="sidebar__user-info">
           <div class="sidebar__username">{{ username() }}</div>
-          <div class="sidebar__role">Administrador</div>
+          <div class="sidebar__role">{{ userRole() }}</div>
         </div>
       </div>
       <button class="sidebar__logout" (click)="logout()" title="Cerrar sesión" id="logout-btn">
@@ -317,6 +327,7 @@ export class LayoutComponent implements OnInit {
 
   username = computed(() => this.authState.currentUser()?.username ?? 'Usuario');
   userInitials = computed(() => this.username().charAt(0).toUpperCase());
+  userRole = computed(() => this.authState.currentUser()?.role ?? 'Usuario');
 
   constructor(
     private authState: AuthStateService,

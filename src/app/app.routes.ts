@@ -20,6 +20,7 @@ export const routes: Routes = [
       { path: 'invoices', loadComponent: () => import('./features/invoices/invoices.component').then(m => m.InvoicesComponent) },
       { path: 'purchases', loadComponent: () => import('./features/purchases/purchases.component').then(m => m.PurchasesComponent) },
       { path: 'reports', loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent) },
+      { path: 'users', loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent) },
     ]
   },
   { path: '**', redirectTo: '/dashboard' }
