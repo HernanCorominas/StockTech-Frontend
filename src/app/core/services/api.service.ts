@@ -56,6 +56,12 @@ export class ApiService {
   deleteProduct(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/products/${id}`);
   }
+  exportProductsExcel(): Observable<Blob> {
+    return this.http.get(`${this.api}/products/export/excel`, { responseType: 'blob' });
+  }
+  exportProductsPdf(): Observable<Blob> {
+    return this.http.get(`${this.api}/products/export/pdf`, { responseType: 'blob' });
+  }
 
   // ─── Suppliers ──────────────────────────────────────────────────────────────
   getSuppliers(): Observable<Supplier[]> {
@@ -92,6 +98,12 @@ export class ApiService {
   }
   createInvoice(data: CreateInvoice): Observable<Invoice> {
     return this.http.post<Invoice>(`${this.api}/invoices`, data);
+  }
+  exportInvoicesExcel(): Observable<Blob> {
+    return this.http.get(`${this.api}/invoices/export/excel`, { responseType: 'blob' });
+  }
+  exportInvoicesPdf(): Observable<Blob> {
+    return this.http.get(`${this.api}/invoices/export/pdf`, { responseType: 'blob' });
   }
 
   // ─── Purchases ──────────────────────────────────────────────────────────────

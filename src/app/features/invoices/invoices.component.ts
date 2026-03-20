@@ -18,6 +18,16 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem, Branch } fr
     <div style="display: flex; gap: 10px; align-items: center">
       <input type="text" [(ngModel)]="search" (keyup.enter)="load(1)" placeholder="Buscar # factura o cliente..." style="padding: 8px; width: 250px" />
       <button class="btn btn--secondary" (click)="load(1)">Buscar</button>
+      <div class="dropdown">
+        <button class="btn btn--secondary" style="gap:4px">
+          📄 Exportar
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+        </button>
+        <div class="dropdown-content">
+          <button (click)="exportExcel()">Excel (.xlsx)</button>
+          <button (click)="exportPdf()">PDF (.pdf)</button>
+        </div>
+      </div>
       <button class="btn btn--primary" (click)="openCreate()">+ Nueva Factura</button>
     </div>
   </div>
@@ -595,5 +605,22 @@ export class InvoicesComponent implements OnInit {
 
   private fmt(n: number): string {
     return (n ?? 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  exportExcel(): void {
+    this.api.exportInvoicesExcel().subscribe(blob => this.downloadFile(blob, 'Facturas.xlsx'));
+  }
+
+  exportPdf(): void {
+    this.api.exportInvoicesPdf().subscribe(blob => this.downloadFile(blob, 'Facturas.pdf'));
+  }
+
+  private downloadFile(blob: Blob, name: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 }

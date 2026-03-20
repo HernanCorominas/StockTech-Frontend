@@ -36,4 +36,12 @@ export class ProductService {
   getKardex(productId: string): Observable<InventoryTransaction[]> {
     return this.http.get<InventoryTransaction[]>(`${this.invApi}/kardex/${productId}`);
   }
+
+  exportExcel(): Observable<Blob> {
+    return this.http.get(`${this.api}/export/excel`, { responseType: 'blob' });
+  }
+
+  exportPdf(): Observable<Blob> {
+    return this.http.get(`${this.api}/export/pdf`, { responseType: 'blob' });
+  }
 }

@@ -4,10 +4,13 @@ import { filter } from 'rxjs/operators';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import { AnimationService } from '../../core/services/animation.service';
 
+import { HasPermissionDirective } from '../../core/directives/has-permission.directive';
+import { NotificationBellComponent } from '../components/notification-bell/notification-bell.component';
+
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, HasPermissionDirective, NotificationBellComponent],
   template: `
 <div class="app-layout">
 
@@ -136,7 +139,19 @@ import { AnimationService } from '../../core/services/animation.service';
 
   <!-- ── Main Content ──────────────────────────────────────────────────── -->
   <main class="main-content" #mainContent>
-    <router-outlet />
+    
+    <header class="main-header">
+      <div class="main-header__left">
+        <!-- Page Title or Breadcrumb could go here -->
+      </div>
+      <div class="main-header__right">
+        <app-notification-bell />
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      <router-outlet />
+    </div>
   </main>
 
 </div>
@@ -319,6 +334,37 @@ import { AnimationService } from '../../core/services/animation.service';
           border-color: rgba(244,63,94,0.25);
         }
       }
+    }
+
+    // Main Header
+    .main-header {
+      height: 64px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+
+      &__right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+    }
+
+    .content-wrapper {
+      padding: 32px;
+    }
+
+    .main-content {
+      margin-left: 240px;
+      min-height: 100vh;
+      background: var(--bg-primary);
     }
   `]
 })
