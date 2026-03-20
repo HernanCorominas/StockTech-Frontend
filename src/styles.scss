@@ -116,14 +116,15 @@ input, select, textarea { font-family: inherit; }
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  transition: all var(--transition);
+  transition: all var(--transition-slow);
+  box-shadow: var(--shadow-sm);
 
   &:hover { 
     border-color: var(--accent); 
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3), var(--shadow-glow);
-    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), var(--shadow-glow);
+    transform: translateY(-4px);
   }
 
   &__header {
@@ -136,12 +137,20 @@ input, select, textarea { font-family: inherit; }
 
     h2 {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 1.1rem;
+      font-weight: 700;
       color: var(--text-primary);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.012em;
     }
   }
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 // "Elevated" card — slightly lighter

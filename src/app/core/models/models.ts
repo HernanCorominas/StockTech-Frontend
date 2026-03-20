@@ -214,6 +214,11 @@ export interface TopProduct {
   revenue: number;
 }
 
+export interface CategoryStock {
+  category: string;
+  stockCount: number;
+}
+
 export interface Dashboard {
   totalSales: number;
   totalPurchases: number;
@@ -226,6 +231,7 @@ export interface Dashboard {
   monthlySales: MonthlySummary[];
   monthlyPurchases: MonthlySummary[];
   topProducts: TopProduct[];
+  categoryDistribution: CategoryStock[];
 }
 
 export interface ReportSummary {

@@ -1,13 +1,15 @@
-import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChildren, ViewChild, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { AnimationService } from '../../core/services/animation.service';
 import { Dashboard } from '../../core/models/models';
 
+import { DashboardChartsComponent } from './components/dashboard-charts/dashboard-charts.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DashboardChartsComponent],
   template: `
 <div class="page-header" #header>
     <div>
@@ -64,6 +66,9 @@ import { Dashboard } from '../../core/models/models';
       </div>
     </div>
 
+    <!-- Analytic Charts -->
+    <app-dashboard-charts *ngIf="data" [data]="data" #chartsContainer />
+
     <!-- Top Products -->
     <div class="card" #productsCard>
       <div class="card__header"><h2>Top Productos por Ingresos</h2></div>
@@ -94,6 +99,7 @@ export class DashboardComponent implements OnInit {
   @ViewChildren('card') cards!: QueryList<ElementRef>;
   @ViewChildren('row') rows!: QueryList<ElementRef>;
   @ViewChildren('productsCard') productsCard!: QueryList<ElementRef>;
+  @ViewChild('chartsContainer', { read: ElementRef }) chartsContainer!: ElementRef;
 
   data: Dashboard | null = null;
   loading = true;
@@ -110,13 +116,18 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
         setTimeout(() => {
           this.anime.staggerIn(this.cards.map(c => c.nativeElement));
+          
+          if (this.chartsContainer) {
+            this.anime.fadeIn(this.chartsContainer.nativeElement, 0.4);
+          }
+
           if (this.productsCard.first) {
-            this.anime.fadeIn(this.productsCard.first.nativeElement, 0.3);
+            this.anime.fadeIn(this.productsCard.first.nativeElement, 0.6);
           }
           if (this.rows.length > 0) {
             this.anime.staggerIn(this.rows.map(r => r.nativeElement), 0.03);
           }
-        }, 0);
+        }, 300);
       },
       error: () => { this.loading = false; }
     });

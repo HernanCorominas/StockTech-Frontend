@@ -116,17 +116,27 @@ import { NotificationBellComponent } from '../components/notification-bell/notif
           <span>Usuarios</span>
         </a>
       </div>
+
+      <div class="sidebar__section-label" style="margin-top:14px">Cuenta</div>
+      <a routerLink="/profile" routerLinkActive="active" class="sidebar__link">
+        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 10a4 4 0 100-8 4 4 0 000 8z" fill="currentColor" fill-opacity="0.1"/>
+          <path d="M10 10a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Mi Perfil</span>
+      </a>
     </nav>
 
     <!-- User Footer -->
     <div class="sidebar__footer">
-      <div class="sidebar__user">
+      <a routerLink="/profile" class="sidebar__user" style="text-decoration:none; cursor:pointer">
         <div class="sidebar__avatar">{{ userInitials() }}</div>
         <div class="sidebar__user-info">
           <div class="sidebar__username">{{ username() }}</div>
           <div class="sidebar__role">{{ userRole() }}</div>
         </div>
-      </div>
+      </a>
       <button class="sidebar__logout" (click)="logout()" title="Cerrar sesión" id="logout-btn">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
