@@ -61,6 +61,22 @@ import { AuthStateService } from '../../core/services/auth-state.service';
         <span>Inventario</span>
       </a>
 
+      <a routerLink="/suppliers" routerLinkActive="active" class="sidebar__link">
+        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4h12v12H4z" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>
+          <path d="M7 7h6M7 10h6M7 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Suplidores</span>
+      </a>
+
+      <a routerLink="/branches" routerLinkActive="active" class="sidebar__link">
+        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 7l7-4 7 4v9l-7 4-7-4V7z" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>
+          <path d="M10 3v18m7-14l-7 4-7-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Sucursales</span>
+      </a>
+
       <a routerLink="/invoices" routerLinkActive="active" class="sidebar__link">
         <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>

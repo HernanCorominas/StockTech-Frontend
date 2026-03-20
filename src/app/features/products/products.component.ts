@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Product, CreateProduct, UpdateProduct } from '../../core/models/models';
+import { Product, CreateProduct, UpdateProduct, InventoryTransaction } from '../../core/models/models';
 
 @Component({
   selector: 'app-products',
@@ -10,12 +10,16 @@ import { Product, CreateProduct, UpdateProduct } from '../../core/models/models'
   imports: [CommonModule, FormsModule],
   template: `
 <div>
-  <div class="page-header">
+<div class="page-header">
     <div>
       <h1>Inventario</h1>
-      <p>{{ products.length }} productos activos</p>
+      <p>{{ totalCount }} productos totales</p>
     </div>
-    <button class="btn btn--primary" (click)="openCreate()">+ Nuevo Producto</button>
+    <div style="display: flex; gap: 10px; align-items: center">
+      <input type="text" [(ngModel)]="search" (keyup.enter)="load(1)" placeholder="Buscar producto..." style="padding: 8px" />
+      <button class="btn btn--secondary" (click)="load(1)">Buscar</button>
+      <button class="btn btn--primary" (click)="openCreate()">+ Nuevo Producto</button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="spinner"></div>
@@ -51,9 +55,10 @@ import { Product, CreateProduct, UpdateProduct } from '../../core/models/models'
               {{ p.lowStock ? '⚠️ Stock Bajo' : '✓ Normal' }}
             </span>
           </td>
-          <td>
+          <td style="display:flex; gap:4px">
             <button class="btn btn--secondary" style="padding:6px 12px;font-size:0.8rem" (click)="openEdit(p)">Editar</button>
-            <button class="btn btn--danger" style="padding:6px 12px;font-size:0.8rem;margin-left:4px" (click)="delete(p.id)">Eliminar</button>
+            <button class="btn btn--accent" style="padding:6px 12px;font-size:0.8rem" (click)="openKardex(p)">Historial</button>
+            <button class="btn btn--danger" style="padding:6px 12px;font-size:0.8rem" (click)="delete(p.id)">Eliminar</button>
           </td>
         </tr>
         <tr *ngIf="products.length === 0">
@@ -61,6 +66,13 @@ import { Product, CreateProduct, UpdateProduct } from '../../core/models/models'
         </tr>
       </tbody>
     </table>
+    <div style="display: flex; justify-content: space-between; padding: 16px; align-items: center; border-top: 1px solid #ddd">
+      <span class="text-muted" style="font-size: 0.9rem">Mostrando página {{ page }}</span>
+      <div style="display: flex; gap: 8px">
+        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="products.length < pageSize" (click)="load(page + 1)">Siguiente</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -121,6 +133,54 @@ import { Product, CreateProduct, UpdateProduct } from '../../core/models/models'
     </div>
   </div>
 </div>
+
+<!-- Kardex Modal -->
+<div class="modal-overlay" *ngIf="showKardexModal" (click)="showKardexModal = false">
+  <div class="modal modal--lg" (click)="$event.stopPropagation()" style="max-width: 900px">
+    <div class="modal__header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+      <h3>Historial de Movimientos: {{ selectedProductName }}</h3>
+      <button class="btn btn--secondary" (click)="showKardexModal = false">✕</button>
+    </div>
+
+    <div *ngIf="loadingKardex" class="spinner"></div>
+
+    <table class="data-table" *ngIf="!loadingKardex">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Referencia</th>
+          <th>Previo</th>
+          <th>Cant.</th>
+          <th>Nuevo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let k of kardexEntries">
+          <td>{{ k.transactionDate | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <span class="badge" [class.badge--success]="k.type === 1" [class.badge--warning]="k.type === 2" [class.badge--accent]="k.type === 3">
+              {{ k.type === 1 ? 'Compra' : k.type === 2 ? 'Venta' : 'Ajuste' }}
+            </span>
+          </td>
+          <td class="font-mono text-muted">{{ k.referenceNumber || '—' }}</td>
+          <td>{{ k.previousStock }}</td>
+          <td [class.text-success]="k.type === 1" [class.text-danger]="k.type === 2">
+            {{ k.type === 1 ? '+' : '-' }}{{ k.quantity }}
+          </td>
+          <td class="fw-bold">{{ k.newStock }}</td>
+        </tr>
+        <tr *ngIf="kardexEntries.length === 0">
+          <td colspan="6" style="text-align:center;padding:40px" class="text-muted">No hay movimientos registrados.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="modal__footer" style="margin-top:20px">
+      <button class="btn btn--secondary" (click)="showKardexModal = false">Cerrar</button>
+    </div>
+  </div>
+</div>
   `
 })
 export class ProductsComponent implements OnInit {
@@ -131,15 +191,34 @@ export class ProductsComponent implements OnInit {
   editId: string | null = null;
   error = '';
 
+  page = 1;
+  pageSize = 10;
+  search = '';
+  totalCount = 0;
+
+  // Kardex
+  showKardexModal = false;
+  loadingKardex = false;
+  selectedProductName = '';
+  kardexEntries: InventoryTransaction[] = [];
+
   form: any = { name: '', sku: '', description: '', price: 0, cost: 0, stock: 0, minStock: 0, category: '', isActive: true };
 
   constructor(private api: ApiService) {}
 
   ngOnInit(): void { this.load(); }
 
-  load(): void {
+  load(pageIndex?: number): void {
+    if (pageIndex) this.page = pageIndex;
     this.loading = true;
-    this.api.getProducts().subscribe({ next: (p) => { this.products = p; this.loading = false; }, error: () => this.loading = false });
+    this.api.getProducts(this.page, this.pageSize, this.search).subscribe({ 
+        next: (p) => { 
+            this.products = p.items; 
+            this.totalCount = p.totalCount;
+            this.loading = false; 
+        }, 
+        error: () => this.loading = false 
+    });
   }
 
   openCreate(): void {
@@ -154,6 +233,19 @@ export class ProductsComponent implements OnInit {
     this.form = { name: p.name, sku: p.sku, description: p.description, price: p.price, cost: p.cost, stock: p.stock, minStock: p.minStock, category: p.category, isActive: p.isActive };
     this.error = '';
     this.showModal = true;
+  }
+
+  openKardex(p: Product): void {
+    this.selectedProductName = p.name;
+    this.showKardexModal = true;
+    this.loadingKardex = true;
+    this.api.getKardex(p.id).subscribe({
+      next: (k) => {
+        this.kardexEntries = k;
+        this.loadingKardex = false;
+      },
+      error: () => this.loadingKardex = false
+    });
   }
 
   save(): void {
@@ -177,3 +269,4 @@ export class ProductsComponent implements OnInit {
 
   closeModal(e: Event): void { if ((e.target as HTMLElement).classList.contains('modal-overlay')) this.showModal = false; }
 }
+

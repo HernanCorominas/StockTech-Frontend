@@ -84,7 +84,7 @@ import { ReportSummary } from '../../core/models/models';
       <tbody>
         <tr *ngFor="let p of summary.purchases">
           <td class="font-mono text-accent">{{ p.purchaseNumber }}</td>
-          <td>{{ p.supplier }}</td>
+          <td>{{ p.supplierName }}</td>
           <td>{{ p.purchaseDate | date:'dd/MM/yyyy' }}</td>
           <td class="fw-bold text-warning">RD$ {{ p.total | number:'1.2-2' }}</td>
         </tr>

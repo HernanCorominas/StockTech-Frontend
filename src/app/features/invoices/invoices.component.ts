@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../../core/models/models';
+import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem, Branch } from '../../core/models/models';
 
 @Component({
   selector: 'app-invoices',
@@ -13,9 +13,13 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../.
   <div class="page-header">
     <div>
       <h1>Facturación</h1>
-      <p>{{ invoices.length }} facturas registradas</p>
+      <p>{{ totalCount }} facturas en total</p>
     </div>
-    <button class="btn btn--primary" (click)="openCreate()">+ Nueva Factura</button>
+    <div style="display: flex; gap: 10px; align-items: center">
+      <input type="text" [(ngModel)]="search" (keyup.enter)="load(1)" placeholder="Buscar # factura o cliente..." style="padding: 8px; width: 250px" />
+      <button class="btn btn--secondary" (click)="load(1)">Buscar</button>
+      <button class="btn btn--primary" (click)="openCreate()">+ Nueva Factura</button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="spinner"></div>
@@ -26,6 +30,7 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../.
         <tr>
           <th># Factura</th>
           <th>Cliente</th>
+          <th>Sucursal</th>
           <th>Fecha</th>
           <th>Subtotal</th>
           <th>ITBIS</th>
@@ -38,6 +43,7 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../.
         <tr *ngFor="let inv of invoices">
           <td class="fw-bold font-mono text-accent">{{ inv.invoiceNumber }}</td>
           <td>{{ inv.clientName }}</td>
+          <td>{{ inv.branchName || '—' }}</td>
           <td>{{ inv.invoiceDate | date:'dd/MM/yyyy' }}</td>
           <td>RD$ {{ inv.subtotal | number:'1.2-2' }}</td>
           <td>RD$ {{ inv.taxAmount | number:'1.2-2' }}</td>
@@ -50,10 +56,17 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../.
           </td>
         </tr>
         <tr *ngIf="invoices.length === 0">
-          <td colspan="8" style="text-align:center;padding:40px" class="text-muted">Sin facturas registradas.</td>
+          <td colspan="9" style="text-align:center;padding:40px" class="text-muted">Sin facturas registradas.</td>
         </tr>
       </tbody>
     </table>
+    <div style="display: flex; justify-content: space-between; padding: 16px; align-items: center; border-top: 1px solid #ddd">
+      <span class="text-muted" style="font-size: 0.9rem">Mostrando página {{ page }}</span>
+      <div style="display: flex; gap: 8px">
+        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+        <button class="btn btn--secondary" style="padding: 6px 12px; font-size: 0.9rem" [disabled]="invoices.length < pageSize" (click)="load(page + 1)">Siguiente</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -72,17 +85,28 @@ import { Invoice, Client, Product, CreateInvoice, CreateInvoiceItem } from '../.
         </select>
       </div>
       <div class="form-group">
+        <label>Sucursal (Opcional)</label>
+        <select [(ngModel)]="branchId">
+          <option value="">-- Selecciona sucursal --</option>
+          <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top: 12px">
+      <div class="form-group">
         <label>ITBIS (%)</label>
         <select [(ngModel)]="taxRate">
           <option [value]="0">0% (Exento)</option>
           <option [value]="0.18">18% (ITBIS)</option>
         </select>
       </div>
+      <div class="form-group"></div> <!-- Spacer -->
     </div>
 
     <!-- Product Lines -->
     <div class="invoice-items">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:12px">
         <label style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary)">Productos</label>
         <button class="btn btn--secondary" style="padding:6px 12px;font-size:0.8rem" (click)="addLine()">+ Agregar</button>
       </div>
@@ -149,12 +173,14 @@ export class InvoicesComponent implements OnInit {
   invoices: Invoice[] = [];
   clients: Client[] = [];
   products: Product[] = [];
+  branches: Branch[] = [];
   loading = true;
   showModal = false;
   saving = false;
   error = '';
 
   selectedClientId = '';
+  branchId = '';
   taxRate = 0.18;
   notes = '';
   lines: { productId: string; quantity: number }[] = [];
@@ -162,16 +188,35 @@ export class InvoicesComponent implements OnInit {
   taxAmount = 0;
   total = 0;
 
+  page = 1;
+  pageSize = 10;
+  search = '';
+  totalCount = 0;
+
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
-    this.api.getInvoices().subscribe({ next: (i) => { this.invoices = i; this.loading = false; }, error: () => this.loading = false });
+    this.load();
     this.api.getClients().subscribe({ next: (c) => this.clients = c });
-    this.api.getProducts().subscribe({ next: (p) => this.products = p });
+    this.api.getProducts().subscribe({ next: (p) => this.products = p.items });
+    this.api.getBranches().subscribe({ next: (b) => this.branches = b });
+  }
+
+  load(pageIndex?: number): void {
+    if (pageIndex) this.page = pageIndex;
+    this.loading = true;
+    this.api.getInvoices(this.page, this.pageSize, this.search).subscribe({ 
+        next: (p) => { 
+            this.invoices = p.items; 
+            this.totalCount = p.totalCount;
+            this.loading = false; 
+        }, 
+        error: () => this.loading = false 
+    });
   }
 
   openCreate(): void {
-    this.selectedClientId = ''; this.taxRate = 0.18; this.notes = ''; this.lines = []; this.error = '';
+    this.selectedClientId = ''; this.branchId = ''; this.taxRate = 0.18; this.notes = ''; this.lines = []; this.error = '';
     this.subtotal = 0; this.taxAmount = 0; this.total = 0;
     this.showModal = true;
   }
@@ -201,6 +246,7 @@ export class InvoicesComponent implements OnInit {
     this.saving = true; this.error = '';
     const payload: CreateInvoice = {
       clientId: this.selectedClientId,
+      branchId: this.branchId || undefined,
       items: validLines.map(l => ({ productId: l.productId, quantity: l.quantity })),
       taxRate: Number(this.taxRate),
       notes: this.notes
@@ -211,7 +257,7 @@ export class InvoicesComponent implements OnInit {
         this.invoices.unshift(inv);
         this.showModal = false;
         this.saving = false;
-        this.api.getProducts().subscribe(p => this.products = p); // refresh stock
+        this.api.getProducts().subscribe(p => this.products = p.items); // refresh stock
         // Auto-open print dialog after invoice is created
         setTimeout(() => this.printInvoice(inv), 300);
       },
@@ -467,6 +513,7 @@ export class InvoicesComponent implements OnInit {
     <div class="party-box company-box">
       <div class="party-title">Emisor</div>
       <div class="party-name">StockTech S.R.L.</div>
+      <div class="party-detail">📍 Sucursal: ${inv.branchName || 'Principal'}</div>
       <div class="party-detail">🏢 República Dominicana</div>
       <div class="party-detail">🌐 stocktech.app</div>
     </div>

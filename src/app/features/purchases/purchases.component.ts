@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Purchase, Product, CreatePurchase } from '../../core/models/models';
+import { Purchase, Product, CreatePurchase, Supplier, Branch } from '../../core/models/models';
 
 @Component({
   selector: 'app-purchases',
@@ -23,18 +23,26 @@ import { Purchase, Product, CreatePurchase } from '../../core/models/models';
   <div class="card" *ngIf="!loading">
     <table class="data-table">
       <thead>
-        <tr><th># Compra</th><th>Proveedor</th><th>Fecha</th><th>Items</th><th>Total</th></tr>
+        <tr>
+          <th># Compra</th>
+          <th>Suplidor</th>
+          <th>Sucursal</th>
+          <th>Fecha</th>
+          <th>Items</th>
+          <th>Total</th>
+        </tr>
       </thead>
       <tbody>
         <tr *ngFor="let p of purchases">
           <td class="fw-bold font-mono text-accent">{{ p.purchaseNumber }}</td>
-          <td class="fw-semibold">{{ p.supplier }}</td>
+          <td class="fw-semibold">{{ p.supplierName }}</td>
+          <td>{{ p.branchName || '—' }}</td>
           <td>{{ p.purchaseDate | date:'dd/MM/yyyy' }}</td>
           <td><span class="badge badge--accent">{{ p.items.length }} productos</span></td>
           <td class="fw-bold text-success">RD$ {{ p.total | number:'1.2-2' }}</td>
         </tr>
         <tr *ngIf="purchases.length === 0">
-          <td colspan="5" style="text-align:center;padding:40px" class="text-muted">Sin compras registradas.</td>
+          <td colspan="6" style="text-align:center;padding:40px" class="text-muted">Sin compras registradas.</td>
         </tr>
       </tbody>
     </table>
@@ -47,12 +55,24 @@ import { Purchase, Product, CreatePurchase } from '../../core/models/models';
     <h3>Nueva Compra</h3>
     <div *ngIf="error" class="alert alert--error">{{ error }}</div>
 
-    <div class="form-group">
-      <label>Proveedor *</label>
-      <input [(ngModel)]="supplier" placeholder="Nombre del proveedor" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Suplidor *</label>
+        <select [(ngModel)]="supplierId" class="form-control">
+          <option value="">-- Seleccionar Suplidor --</option>
+          <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sucursal (Opcional)</label>
+        <select [(ngModel)]="branchId" class="form-control">
+          <option value="">-- Seleccionar Sucursal --</option>
+          <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+        </select>
+      </div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:12px">
       <label style="font-size:0.8rem;font-weight:600;text-transform:uppercase;color:var(--text-secondary)">Productos a Comprar</label>
       <button class="btn btn--secondary" style="padding:6px 12px;font-size:0.8rem" (click)="addLine()">+ Agregar</button>
     </div>
@@ -96,11 +116,15 @@ import { Purchase, Product, CreatePurchase } from '../../core/models/models';
 export class PurchasesComponent implements OnInit {
   purchases: Purchase[] = [];
   products: Product[] = [];
+  suppliers: Supplier[] = [];
+  branches: Branch[] = [];
   loading = true;
   showModal = false;
   saving = false;
   error = '';
-  supplier = '';
+  
+  supplierId = '';
+  branchId = '';
   notes = '';
   total = 0;
   lines: { productId: string; quantity: number; unitCost: number }[] = [];
@@ -109,11 +133,13 @@ export class PurchasesComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.getPurchases().subscribe({ next: (p) => { this.purchases = p; this.loading = false; }, error: () => this.loading = false });
-    this.api.getProducts().subscribe({ next: (p) => this.products = p });
+    this.api.getProducts(1, 1000).subscribe({ next: (p) => this.products = p.items });
+    this.api.getSuppliers().subscribe({ next: (s) => this.suppliers = s });
+    this.api.getBranches().subscribe({ next: (b) => this.branches = b });
   }
 
   openCreate(): void {
-    this.supplier = ''; this.notes = ''; this.lines = []; this.total = 0; this.error = '';
+    this.supplierId = ''; this.branchId = ''; this.notes = ''; this.lines = []; this.total = 0; this.error = '';
     this.showModal = true;
   }
 
@@ -131,13 +157,14 @@ export class PurchasesComponent implements OnInit {
   }
 
   create(): void {
-    if (!this.supplier.trim()) { this.error = 'El proveedor es requerido.'; return; }
+    if (!this.supplierId) { this.error = 'El suplidor es requerido.'; return; }
     const validLines = this.lines.filter(l => l.productId && l.quantity > 0 && l.unitCost >= 0);
     if (validLines.length === 0) { this.error = 'Agrega al menos un producto.'; return; }
 
     this.saving = true; this.error = '';
     const payload: CreatePurchase = {
-      supplier: this.supplier.trim(),
+      supplierId: this.supplierId,
+      branchId: this.branchId || undefined,
       items: validLines.map(l => ({ productId: l.productId, quantity: l.quantity, unitCost: l.unitCost })),
       notes: this.notes
     };
@@ -146,7 +173,7 @@ export class PurchasesComponent implements OnInit {
       next: (p) => {
         this.purchases.unshift(p);
         this.showModal = false; this.saving = false;
-        this.api.getProducts().subscribe(prods => this.products = prods); // refresh stock
+        this.api.getProducts(1, 1000).subscribe(prods => this.products = prods.items); // refresh stock
       },
       error: (e) => { this.error = e.error?.message ?? 'Error al registrar compra.'; this.saving = false; }
     });

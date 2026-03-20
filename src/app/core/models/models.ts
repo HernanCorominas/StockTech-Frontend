@@ -69,6 +69,40 @@ export interface UpdateProduct {
   isActive: boolean;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  taxId: string;
+  createdAt: string;
+}
+
+export interface CreateSupplier {
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  taxId: string;
+}
+
+export interface Branch {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  managerName: string;
+  createdAt: string;
+}
+
+export interface CreateBranch {
+  name: string;
+  address: string;
+  phone: string;
+  managerName: string;
+}
+
 export interface InvoiceItem {
   id: string;
   productId: string;
@@ -84,6 +118,8 @@ export interface Invoice {
   clientId: string;
   clientName: string;
   clientDocument: string;
+  branchId?: string;
+  branchName?: string;
   invoiceDate: string;
   subtotal: number;
   taxRate: number;
@@ -103,6 +139,7 @@ export interface CreateInvoiceItem {
 
 export interface CreateInvoice {
   clientId: string;
+  branchId?: string;
   items: CreateInvoiceItem[];
   taxRate: number;
   notes?: string;
@@ -120,7 +157,10 @@ export interface PurchaseItem {
 export interface Purchase {
   id: string;
   purchaseNumber: string;
-  supplier: string;
+  supplierId?: string;
+  supplierName: string;
+  branchId?: string;
+  branchName?: string;
   purchaseDate: string;
   total: number;
   notes?: string;
@@ -135,7 +175,8 @@ export interface CreatePurchaseItem {
 }
 
 export interface CreatePurchase {
-  supplier: string;
+  supplierId: string;
+  branchId?: string;
   items: CreatePurchaseItem[];
   notes?: string;
 }
@@ -182,7 +223,30 @@ export interface SalesReportItem {
 
 export interface PurchaseReportItem {
   purchaseNumber: string;
-  supplier: string;
+  supplierName: string;
   purchaseDate: string;
   total: number;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  productId: string;
+  type: number;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  referenceNumber?: string;
+  transactionDate: string;
+  invoiceId?: string;
+  purchaseId?: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }

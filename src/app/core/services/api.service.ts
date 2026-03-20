@@ -6,14 +6,17 @@ import {
   LoginRequest, LoginResponse,
   Client, CreateClient,
   Product, CreateProduct, UpdateProduct,
+  Supplier, CreateSupplier,
+  Branch, CreateBranch,
   Invoice, CreateInvoice,
   Purchase, CreatePurchase,
-  Dashboard, ReportSummary
+  InventoryTransaction,
+  Dashboard, ReportSummary, PagedResult
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private api = environment.apiUrl;
+  private api = `${environment.apiUrl}/v1`;
 
   constructor(private http: HttpClient) {}
 
@@ -34,8 +37,12 @@ export class ApiService {
   }
 
   // ─── Products ───────────────────────────────────────────────────────────────
-  getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.api}/products`);
+  getProducts(page: number = 1, pageSize: number = 10, search?: string): Observable<PagedResult<Product>> {
+    let url = `${this.api}/products?page=${page}&pageSize=${pageSize}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.http.get<PagedResult<Product>>(url);
   }
   getProduct(id: string): Observable<Product> {
     return this.http.get<Product>(`${this.api}/products/${id}`);
@@ -50,9 +57,35 @@ export class ApiService {
     return this.http.delete<void>(`${this.api}/products/${id}`);
   }
 
+  // ─── Suppliers ──────────────────────────────────────────────────────────────
+  getSuppliers(): Observable<Supplier[]> {
+    return this.http.get<Supplier[]>(`${this.api}/suppliers`);
+  }
+  getSupplier(id: string): Observable<Supplier> {
+    return this.http.get<Supplier>(`${this.api}/suppliers/${id}`);
+  }
+  createSupplier(data: CreateSupplier): Observable<Supplier> {
+    return this.http.post<Supplier>(`${this.api}/suppliers`, data);
+  }
+
+  // ─── Branches ───────────────────────────────────────────────────────────────
+  getBranches(): Observable<Branch[]> {
+    return this.http.get<Branch[]>(`${this.api}/branches`);
+  }
+  getBranch(id: string): Observable<Branch> {
+    return this.http.get<Branch>(`${this.api}/branches/${id}`);
+  }
+  createBranch(data: CreateBranch): Observable<Branch> {
+    return this.http.post<Branch>(`${this.api}/branches`, data);
+  }
+
   // ─── Invoices ───────────────────────────────────────────────────────────────
-  getInvoices(): Observable<Invoice[]> {
-    return this.http.get<Invoice[]>(`${this.api}/invoices`);
+  getInvoices(page: number = 1, pageSize: number = 10, search?: string): Observable<PagedResult<Invoice>> {
+    let url = `${this.api}/invoices?page=${page}&pageSize=${pageSize}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.http.get<PagedResult<Invoice>>(url);
   }
   getInvoice(id: string): Observable<Invoice> {
     return this.http.get<Invoice>(`${this.api}/invoices/${id}`);
@@ -70,6 +103,11 @@ export class ApiService {
   }
   createPurchase(data: CreatePurchase): Observable<Purchase> {
     return this.http.post<Purchase>(`${this.api}/purchases`, data);
+  }
+
+  // ─── Inventory ──────────────────────────────────────────────────────────────
+  getKardex(productId: string): Observable<InventoryTransaction[]> {
+    return this.http.get<InventoryTransaction[]>(`${this.api}/inventory/kardex/${productId}`);
   }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
