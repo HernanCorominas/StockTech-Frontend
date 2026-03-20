@@ -1,6 +1,8 @@
-import { Component, computed } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthStateService } from '../../core/services/auth-state.service';
+import { AnimationService } from '../../core/services/animation.service';
 
 @Component({
   selector: 'app-layout',
@@ -123,7 +125,7 @@ import { AuthStateService } from '../../core/services/auth-state.service';
   </aside>
 
   <!-- ── Main Content ──────────────────────────────────────────────────── -->
-  <main class="main-content">
+  <main class="main-content" #mainContent>
     <router-outlet />
   </main>
 
@@ -310,11 +312,27 @@ import { AuthStateService } from '../../core/services/auth-state.service';
     }
   `]
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
+  @ViewChild('mainContent') mainContent!: ElementRef;
+
   username = computed(() => this.authState.currentUser()?.username ?? 'Usuario');
   userInitials = computed(() => this.username().charAt(0).toUpperCase());
 
-  constructor(private authState: AuthStateService) {}
+  constructor(
+    private authState: AuthStateService,
+    private router: Router,
+    private anime: AnimationService
+  ) {}
+
+  ngOnInit(): void {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      if (this.mainContent) {
+        this.anime.pageTransition(this.mainContent.nativeElement);
+      }
+    });
+  }
   
   logout() { this.authState.logout(); }
 }

@@ -55,4 +55,14 @@ export class AnimationService {
       ease: 'sine.inOut' 
     });
   }
+
+  /**
+   * Global page transition effect for route changes.
+   */
+  pageTransition(element: any) {
+    return gsap.fromTo(element, 
+      { opacity: 0, x: 10 },
+      { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }
+    );
+  }
 }

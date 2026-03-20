@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChildren, QueryList, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AnimationService } from '../../core/services/animation.service';
 import { Branch, CreateBranch } from '../../core/models/models';
 
 @Component({
@@ -9,13 +10,12 @@ import { Branch, CreateBranch } from '../../core/models/models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-<div>
-  <div class="page-header">
+<div class="page-header" #header>
     <div>
       <h1>Sucursales</h1>
       <p>{{ branches.length }} registradas</p>
     </div>
-    <button class="btn btn--primary" (click)="showModal = true">+ Nueva Sucursal</button>
+    <button class="btn btn--primary" (click)="openModal()">+ Nueva Sucursal</button>
   </div>
 
   <div *ngIf="loading" class="spinner"></div>
@@ -32,7 +32,7 @@ import { Branch, CreateBranch } from '../../core/models/models';
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let b of branches">
+        <tr *ngFor="let b of branches" #row>
           <td class="fw-semibold">{{ b.name }}</td>
           <td>{{ b.address }}</td>
           <td>{{ b.phone }}</td>
@@ -45,11 +45,10 @@ import { Branch, CreateBranch } from '../../core/models/models';
       </tbody>
     </table>
   </div>
-</div>
 
 <!-- Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="closeModal($event)">
-  <div class="modal" (click)="$event.stopPropagation()">
+  <div class="modal" (click)="$event.stopPropagation()" #modalRef>
     <h3>Nueva Sucursal</h3>
     <div *ngIf="error" class="alert alert--error">{{ error }}</div>
 
@@ -85,6 +84,9 @@ import { Branch, CreateBranch } from '../../core/models/models';
   `
 })
 export class BranchesComponent implements OnInit {
+  @ViewChildren('row') rows!: QueryList<ElementRef>;
+  @ViewChild('modalRef') modalRef!: ElementRef;
+
   branches: Branch[] = [];
   loading = true;
   showModal = false;
@@ -93,23 +95,46 @@ export class BranchesComponent implements OnInit {
 
   form: CreateBranch = { name: '', address: '', phone: '', managerName: '' };
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private anime: AnimationService
+  ) {}
 
   ngOnInit(): void { this.loadBranches(); }
 
   loadBranches(): void {
     this.loading = true;
     this.api.getBranches().subscribe({
-      next: (b) => { this.branches = b; this.loading = false; },
+      next: (b) => { 
+        this.branches = b; 
+        this.loading = false;
+        setTimeout(() => {
+          this.anime.staggerIn(this.rows.map(r => r.nativeElement));
+        }, 0);
+      },
       error: () => { this.loading = false; }
     });
+  }
+
+  openModal(): void {
+    this.showModal = true;
+    this.error = '';
+    setTimeout(() => {
+        if (this.modalRef) this.anime.modalIn(this.modalRef.nativeElement);
+    }, 0);
   }
 
   create(): void {
     if (!this.form.name || !this.form.address) { this.error = 'Nombre y dirección son requeridos.'; return; }
     this.saving = true; this.error = '';
     this.api.createBranch(this.form).subscribe({
-      next: (b) => { this.branches.unshift(b); this.showModal = false; this.saving = false; this.resetForm(); },
+      next: (b) => { 
+        this.branches.unshift(b); 
+        this.showModal = false; 
+        this.saving = false; 
+        this.resetForm(); 
+        setTimeout(() => this.anime.fadeIn(this.rows.first.nativeElement), 0);
+      },
       error: (e) => { this.error = e.error?.message ?? 'Error al crear sucursal.'; this.saving = false; }
     });
   }

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
+import { AnimationService } from '../../core/services/animation.service';
 import { Dashboard } from '../../core/models/models';
 
 @Component({
@@ -8,8 +9,7 @@ import { Dashboard } from '../../core/models/models';
   standalone: true,
   imports: [CommonModule],
   template: `
-<div>
-  <div class="page-header">
+<div class="page-header" #header>
     <div>
       <h1>Dashboard</h1>
       <p>Resumen de métricas del sistema</p>
@@ -20,44 +20,44 @@ import { Dashboard } from '../../core/models/models';
 
   <ng-container *ngIf="!loading && data">
     <div class="metric-grid">
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Total Vendido</div>
         <div class="metric-value">RD$ {{ data.totalSales | number:'1.2-2' }}</div>
         <div class="metric-icon">💰</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Total Comprado</div>
         <div class="metric-value">RD$ {{ data.totalPurchases | number:'1.2-2' }}</div>
         <div class="metric-icon">🛒</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Ganancia Neta</div>
         <div class="metric-value" [class.text-success]="data.profit >= 0" [class.text-danger]="data.profit < 0">
           RD$ {{ data.profit | number:'1.2-2' }}
         </div>
         <div class="metric-icon">📈</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Facturas Emitidas</div>
         <div class="metric-value">{{ data.totalInvoices }}</div>
         <div class="metric-icon">🧾</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Clientes</div>
         <div class="metric-value">{{ data.totalClients }}</div>
         <div class="metric-icon">👥</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Productos</div>
         <div class="metric-value">{{ data.totalProducts }}</div>
         <div class="metric-icon">📦</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Stock Bajo</div>
         <div class="metric-value" [class.text-warning]="data.lowStockProducts > 0">{{ data.lowStockProducts }}</div>
         <div class="metric-icon">⚠️</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" #card>
         <div class="metric-label">Compras Realizadas</div>
         <div class="metric-value">{{ data.totalPurchasesCount }}</div>
         <div class="metric-icon">📋</div>
@@ -65,7 +65,7 @@ import { Dashboard } from '../../core/models/models';
     </div>
 
     <!-- Top Products -->
-    <div class="card">
+    <div class="card" #productsCard>
       <div class="card__header"><h2>Top Productos por Ingresos</h2></div>
       <table class="data-table" *ngIf="data.topProducts.length > 0; else noData">
         <thead>
@@ -77,7 +77,7 @@ import { Dashboard } from '../../core/models/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of data.topProducts; let i = index">
+          <tr *ngFor="let p of data.topProducts; let i = index" #row>
             <td><span class="badge badge--accent">{{ i + 1 }}</span></td>
             <td class="fw-semibold">{{ p.productName }}</td>
             <td>{{ p.quantitySold }}</td>
@@ -88,18 +88,36 @@ import { Dashboard } from '../../core/models/models';
       <ng-template #noData><p class="text-muted" style="padding:20px;text-align:center">Sin ventas registradas aún.</p></ng-template>
     </div>
   </ng-container>
-</div>
   `
 })
 export class DashboardComponent implements OnInit {
+  @ViewChildren('card') cards!: QueryList<ElementRef>;
+  @ViewChildren('row') rows!: QueryList<ElementRef>;
+  @ViewChildren('productsCard') productsCard!: QueryList<ElementRef>;
+
   data: Dashboard | null = null;
   loading = true;
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private anime: AnimationService
+  ) {}
 
   ngOnInit(): void {
     this.api.getDashboard().subscribe({
-      next: (d) => { this.data = d; this.loading = false; },
+      next: (d) => { 
+        this.data = d; 
+        this.loading = false;
+        setTimeout(() => {
+          this.anime.staggerIn(this.cards.map(c => c.nativeElement));
+          if (this.productsCard.first) {
+            this.anime.fadeIn(this.productsCard.first.nativeElement, 0.3);
+          }
+          if (this.rows.length > 0) {
+            this.anime.staggerIn(this.rows.map(r => r.nativeElement), 0.03);
+          }
+        }, 0);
+      },
       error: () => { this.loading = false; }
     });
   }
