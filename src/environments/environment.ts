@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://stocktech.onrender.com/api'
+  apiUrl: 'https://localhost:7168/api'
 };

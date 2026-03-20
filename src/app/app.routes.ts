@@ -21,8 +21,17 @@ export const routes: Routes = [
       { path: 'purchases', loadComponent: () => import('./features/purchases/purchases.component').then(m => m.PurchasesComponent) },
       { path: 'reports', loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent) },
       { path: 'users', loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent) },
-      { path: 'profile', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent) },
     ]
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'appearance',
+    loadComponent: () => import('./features/theme/theme.component').then(m => m.ThemeComponent),
+    canActivate: [AuthGuard]
   },
   { path: '**', redirectTo: '/dashboard' }
 ];

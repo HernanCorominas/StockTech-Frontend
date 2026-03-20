@@ -21,48 +21,28 @@ import { DashboardChartsComponent } from './components/dashboard-charts/dashboar
   <div *ngIf="loading" class="spinner"></div>
 
   <ng-container *ngIf="!loading && data">
-    <div class="metric-grid">
-      <div class="metric-card" #card>
-        <div class="metric-label">Total Vendido</div>
-        <div class="metric-value">RD$ {{ data.totalSales | number:'1.2-2' }}</div>
-        <div class="metric-icon">💰</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="card flex flex-col items-center justify-center p-8 bg-white" #card>
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Vendido</div>
+        <div class="text-3xl font-bold text-slate-900 mb-2">RD$ {{ data.totalSales | number:'1.2-2' }}</div>
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">💰</div>
       </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Total Comprado</div>
-        <div class="metric-value">RD$ {{ data.totalPurchases | number:'1.2-2' }}</div>
-        <div class="metric-icon">🛒</div>
-      </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Ganancia Neta</div>
-        <div class="metric-value" [class.text-success]="data.profit >= 0" [class.text-danger]="data.profit < 0">
+      <div class="card flex flex-col items-center justify-center p-8 bg-white" #card>
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ganancia Neta</div>
+        <div class="text-3xl font-bold mb-2" [class.text-emerald-600]="data.profit >= 0" [class.text-rose-600]="data.profit < 0">
           RD$ {{ data.profit | number:'1.2-2' }}
         </div>
-        <div class="metric-icon">📈</div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">📈</div>
       </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Facturas Emitidas</div>
-        <div class="metric-value">{{ data.totalInvoices }}</div>
-        <div class="metric-icon">🧾</div>
+      <div class="card flex flex-col items-center justify-center p-8 bg-white" #card>
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Stock Bajo</div>
+        <div class="text-3xl font-bold mb-2" [class.text-amber-600]="data.lowStockProducts > 0">{{ data.lowStockProducts }}</div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">⚠️</div>
       </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Clientes</div>
-        <div class="metric-value">{{ data.totalClients }}</div>
-        <div class="metric-icon">👥</div>
-      </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Productos</div>
-        <div class="metric-value">{{ data.totalProducts }}</div>
-        <div class="metric-icon">📦</div>
-      </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Stock Bajo</div>
-        <div class="metric-value" [class.text-warning]="data.lowStockProducts > 0">{{ data.lowStockProducts }}</div>
-        <div class="metric-icon">⚠️</div>
-      </div>
-      <div class="metric-card" #card>
-        <div class="metric-label">Compras Realizadas</div>
-        <div class="metric-value">{{ data.totalPurchasesCount }}</div>
-        <div class="metric-icon">📋</div>
+      <div class="card flex flex-col items-center justify-center p-8 bg-white" #card>
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Productos</div>
+        <div class="text-3xl font-bold text-slate-900 mb-2">{{ data.totalProducts }}</div>
+        <div class="w-12 h-12 rounded-2xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl">📦</div>
       </div>
     </div>
 

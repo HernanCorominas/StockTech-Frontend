@@ -55,6 +55,9 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
   private createCharts() {
     if (!this.data) return;
 
+    const style = getComputedStyle(document.documentElement);
+    const accent = style.getPropertyValue('--accent').trim() || '#3b82f6';
+
     // Sales Chart
     this.salesChart = new Chart(this.salesChartRef.nativeElement, {
       type: 'line',
@@ -63,15 +66,15 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
         datasets: [{
           label: 'Ventas (RD$)',
           data: this.data.monthlySales.map(s => s.total),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          borderWidth: 3,
+          borderColor: accent,
+          backgroundColor: `${accent}1a`, // 10% opacity
+          borderWidth: 4,
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: '#6366f1',
+          pointBackgroundColor: accent,
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
-          pointRadius: 4
+          pointRadius: 5
         }]
       },
       options: {
@@ -79,8 +82,15 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, grid: { display: false } },
-          x: { grid: { display: false } }
+          y: { 
+            beginAtZero: true, 
+            grid: { color: 'rgba(0,0,0,0.03)' },
+            border: { display: false }
+          },
+          x: { 
+            grid: { display: false } ,
+            border: { display: false }
+          }
         }
       }
     });
@@ -93,17 +103,24 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
         datasets: [{
           data: this.data.categoryDistribution.map(c => c.stockCount),
           backgroundColor: [
-            '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'
+            accent, '#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#94a3b8'
           ],
           borderWidth: 0,
-          cutout: '70%'
+          cutout: '75%'
         } as any]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+          legend: { 
+            position: 'bottom', 
+            labels: { 
+              usePointStyle: true, 
+              padding: 25,
+              font: { size: 11, weight: 'bold' }
+            } 
+          }
         }
       }
     });
