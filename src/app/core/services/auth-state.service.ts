@@ -10,7 +10,7 @@ export class AuthStateService {
   private readonly USER_KEY = 'st_user';
 
   // Signals for reactive state
-  private _currentUser = signal<{ username: string; role: string; permissions: string[] } | null>(null);
+  private _currentUser = signal<{ username: string; role: string; fullName?: string; email?: string; permissions: string[] } | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => !!this._currentUser());
   readonly permissions = computed(() => this._currentUser()?.permissions || []);
@@ -41,6 +41,8 @@ export class AuthStateService {
 
     const user = {
       username: response.username,
+      fullName: response.fullName,
+      email: response.email,
       role: response.role,
       permissions: permissions,
       expiresAt: response.expiresAt

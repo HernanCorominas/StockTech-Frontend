@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthStateService } from './auth-state.service';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 export interface AppNotification {
   id: string;
@@ -22,7 +23,7 @@ export class NotificationService {
 
   constructor() {
     // Start connection when user is logged in
-    this.authState.isAuthenticated$.subscribe(isAuth => {
+    toObservable(this.authState.isAuthenticated).subscribe((isAuth: boolean) => {
       if (isAuth) {
         this.startConnection();
       } else {

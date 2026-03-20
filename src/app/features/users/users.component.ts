@@ -40,7 +40,7 @@ import { HasPermissionDirective } from '../../core/directives/has-permission.dir
           <td>{{ u.fullName || '—' }}</td>
           <td>{{ u.email || '—' }}</td>
           <td>
-            <span class="badge badge--accent">{{ u.role?.name }}</span>
+            <span class="badge badge--accent">{{ u.role.name }}</span>
           </td>
           <td>
             <span class="badge" [class.badge--success]="u.isActive" [class.badge--error]="!u.isActive">

@@ -6,8 +6,18 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   username: string;
+  fullName?: string;
+  email?: string;
   role: string;
   expiresAt: string;
+}
+
+export interface AuthState {
+  username: string;
+  role: string;
+  fullName?: string;
+  email?: string;
+  permissions: string[];
 }
 
 export interface Client {
