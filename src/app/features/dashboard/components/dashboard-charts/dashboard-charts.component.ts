@@ -97,7 +97,7 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
           ],
           borderWidth: 0,
           cutout: '70%'
-        }]
+        } as any]
       },
       options: {
         responsive: true,
