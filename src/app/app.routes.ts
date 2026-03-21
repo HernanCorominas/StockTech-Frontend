@@ -28,10 +28,5 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
     canActivate: [AuthGuard]
   },
-  {
-    path: 'appearance',
-    loadComponent: () => import('./features/theme/theme.component').then(m => m.ThemeComponent),
-    canActivate: [AuthGuard]
-  },
   { path: '**', redirectTo: '/dashboard' }
 ];

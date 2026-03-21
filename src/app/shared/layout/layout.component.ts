@@ -1,8 +1,11 @@
 import { Component, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthStateService } from '../../core/services/auth-state.service';
 import { AnimationService } from '../../core/services/animation.service';
+import { ApiService } from '../../core/services/api.service';
 
 import { HasPermissionDirective } from '../../core/directives/has-permission.directive';
 import { NotificationBellComponent } from '../components/notification-bell/notification-bell.component';
@@ -10,8 +13,9 @@ import { NotificationBellComponent } from '../components/notification-bell/notif
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, HasPermissionDirective, NotificationBellComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, HasPermissionDirective, NotificationBellComponent],
   template: `
+
 <div class="app-layout">
 
   <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
@@ -127,12 +131,6 @@ import { NotificationBellComponent } from '../components/notification-bell/notif
         <span>Mi Perfil</span>
       </a>
 
-      <a routerLink="/appearance" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-        </svg>
-        <span>Apariencia</span>
-      </a>
     </nav>
 
     <!-- User Footer -->
@@ -159,7 +157,14 @@ import { NotificationBellComponent } from '../components/notification-bell/notif
     
     <header class="main-header">
       <div class="main-header__left">
-        <!-- Page Title or Breadcrumb could go here -->
+        <!-- Global Branch Selector (Only for Admin) -->
+        <div class="branch-selector" *ngIf="userRole() === 'Admin' || userRole() === 'SystemAdmin'">
+          <div class="branch-selector__icon"><i class="fi fi-rr-shop"></i></div>
+          <select class="branch-selector__dropdown" [(ngModel)]="selectedBranchId" (change)="onBranchChange()">
+            <option [ngValue]="null">Todas las Sucursales</option>
+            <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+          </select>
+        </div>
       </div>
       <div class="main-header__right">
         <app-notification-bell />
@@ -392,13 +397,31 @@ export class LayoutComponent implements OnInit {
   userInitials = computed(() => this.username().charAt(0).toUpperCase());
   userRole = computed(() => this.authState.currentUser()?.role ?? 'Usuario');
 
+  branches: any[] = [];
+  selectedBranchId: string | null = null;
+
   constructor(
     private authState: AuthStateService,
     private router: Router,
-    private anime: AnimationService
+    private anime: AnimationService,
+    private api: ApiService
   ) {}
 
   ngOnInit(): void {
+    // Load branches if admin
+    if (this.userRole() === 'Admin' || this.userRole() === 'SystemAdmin') {
+      this.api.getBranches().subscribe(res => {
+        if (res) {
+          this.branches = res;
+        }
+      });
+      // Retrieve previously selected branch from session storage structure
+      const stored = sessionStorage.getItem('globalSelectedBranchId');
+      if (stored) {
+        this.selectedBranchId = stored;
+      }
+    }
+
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
@@ -406,6 +429,16 @@ export class LayoutComponent implements OnInit {
         this.anime.pageTransition(this.mainContent.nativeElement);
       }
     });
+  }
+
+  onBranchChange() {
+    if (this.selectedBranchId) {
+      sessionStorage.setItem('globalSelectedBranchId', this.selectedBranchId);
+    } else {
+      sessionStorage.removeItem('globalSelectedBranchId');
+    }
+    // Hard refresh or notify via a service to reload the current route data
+    window.location.reload(); 
   }
   
   logout() { this.authState.logout(); }

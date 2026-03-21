@@ -123,15 +123,21 @@ export class ApiService {
   }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
-  getDashboard(): Observable<Dashboard> {
-    return this.http.get<Dashboard>(`${this.api}/dashboard`);
+  getDashboard(branchId?: string): Observable<Dashboard> {
+    let url = `${this.api}/dashboard`;
+    if (branchId) url += `?branchId=${branchId}`;
+    return this.http.get<Dashboard>(url);
   }
 
   // ─── Reports ────────────────────────────────────────────────────────────────
-  getReportSummary(from: string, to: string): Observable<ReportSummary> {
-    return this.http.get<ReportSummary>(`${this.api}/reports/summary?from=${from}&to=${to}`);
+  getReportSummary(from: string, to: string, branchId?: string): Observable<ReportSummary> {
+    let url = `${this.api}/reports/summary?from=${from}&to=${to}`;
+    if (branchId) url += `&branchId=${branchId}`;
+    return this.http.get<ReportSummary>(url);
   }
-  exportReportExcel(from: string, to: string): Observable<Blob> {
-    return this.http.get(`${this.api}/reports/export?from=${from}&to=${to}`, { responseType: 'blob' });
+  exportReportExcel(from: string, to: string, branchId?: string): Observable<Blob> {
+    let url = `${this.api}/reports/export?from=${from}&to=${to}`;
+    if (branchId) url += `&branchId=${branchId}`;
+    return this.http.get(url, { responseType: 'blob' });
   }
 }

@@ -1,0 +1,89 @@
+<!-- Global Floating Trigger Button -->
+<button class="appearance-trigger" (click)="toggleDialog()" aria-label="Abrir Configuración de Apariencia">
+  <i class="fi fi-rr-paint-roller"></i>
+</button>
+
+<!-- Backdrop (Blur) -->
+<div class="appearance-backdrop" *ngIf="isOpen()" (click)="toggleDialog()"></div>
+
+<!-- Modal Dialog -->
+<div class="appearance-modal" *ngIf="isOpen()">
+  
+  <div class="appearance-modal__header">
+    <div class="drag-handle"></div>
+    <h2><i class="fi fi-rr-magic-wand"></i> Personalización Premium</h2>
+    <p>Ajusta el sistema a tu preferencia visual.</p>
+  </div>
+
+  <div class="appearance-modal__body">
+    
+    <!-- Theme Selection -->
+    <div class="theme-section">
+      <h3 class="theme-section__title">Color del Tema</h3>
+      <div class="color-presets">
+        <button 
+          *ngFor="let c of colors"
+          class="color-preset"
+          [style.background]="c.value"
+          [class.active]="themeService.primaryColor() === c.value"
+          (click)="setColor(c)"
+          [attr.aria-label]="'Elegir color ' + c.name">
+        </button>
+      </div>
+    </div>
+
+    <!-- Motion / Animation Options -->
+    <div class="theme-section">
+      <div class="theme-section__header">
+        <h3><i class="fi fi-rr-settings-sliders"></i> Fluidez del Sistema</h3>
+        <span class="value-badge">{{ (themeService.animationIntensity() * 100).toFixed(0) }}%</span>
+      </div>
+      <p class="theme-section__desc">Controla la intensidad del motor GSAP.</p>
+      
+      <input 
+        type="range" 
+        class="ios-slider"
+        min="0" max="2" step="0.1" 
+        [value]="themeService.animationIntensity()" 
+        (input)="updateAnimation($event)"
+      >
+      
+      <div class="slider-labels">
+        <span>Estático</span>
+        <span>Premium iOS</span>
+        <span>Extremo</span>
+      </div>
+    </div>
+
+    <!-- Ambient Depth -->
+    <div class="theme-section">
+      <div class="theme-section__header">
+        <h3><i class="fi fi-rr-layer-plus"></i> Profundidad Ambiental</h3>
+        <span class="value-badge">{{ (themeService.gradientIntensity() * 100).toFixed(0) }}%</span>
+      </div>
+      <p class="theme-section__desc">Ajusta la intensidad del gradiente de fondo.</p>
+      
+      <input 
+        type="range" 
+        class="ios-slider"
+        min="0" max="1" step="0.05" 
+        [value]="themeService.gradientIntensity()" 
+        (input)="updateGradient($event)"
+      >
+      
+      <div class="slider-labels">
+        <span>Plano</span>
+        <span>Glassmorphism</span>
+        <span>Profundo</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="appearance-modal__footer">
+    <button class="btn btn--primary" style="width: 100%; border-radius: 12px; height: 50px;" (click)="toggleDialog()">
+      Cerrar y Aplicar
+    </button>
+  </div>
+
+</div>

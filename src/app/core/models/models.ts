@@ -229,6 +229,11 @@ export interface CategoryStock {
   stockCount: number;
 }
 
+export interface BranchSales {
+  branchName: string;
+  totalSales: number;
+}
+
 export interface Dashboard {
   totalSales: number;
   totalPurchases: number;
@@ -242,6 +247,7 @@ export interface Dashboard {
   monthlyPurchases: MonthlySummary[];
   topProducts: TopProduct[];
   categoryDistribution: CategoryStock[];
+  branchSales: BranchSales[];
 }
 
 export interface ReportSummary {
