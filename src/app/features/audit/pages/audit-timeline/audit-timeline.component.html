@@ -1,0 +1,114 @@
+<div class="page-header">
+  <div>
+    <h1 class="font-black">Historial de Actividad</h1>
+    <p class="text-muted small">Registro global de auditoría y rastreo de cambios</p>
+  </div>
+  <div class="flex items-center gap-4">
+    <p class="text-[10px] font-black uppercase tracking-widest text-muted" *ngIf="!loading">
+      {{ totalCount }} registros encontrados
+    </p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div *ngIf="!loading && logs.length === 0" class="empty-state card p-20 text-center">
+  <div class="text-6xl mb-4">🕒</div>
+  <p class="text-xl font-bold">Sin actividad histórica</p>
+  <p class="text-muted small">No hay registros de auditoría en el rango seleccionado.</p>
+</div>
+
+<div class="timeline" *ngIf="!loading && logs.length > 0">
+  <div class="timeline-item" *ngFor="let log of logs" #timelineItem style="opacity: 0">
+    <div class="timeline-dot" 
+         [ngClass]="{
+           'bg-success': log.action === 'Insert' || log.action === 'Create',
+           'bg-primary': log.action === 'Update',
+           'bg-danger': log.action === 'Delete'
+         }"></div>
+    
+    <div class="card timeline-content" style="padding: 24px">
+      <div class="flex justify-between items-start mb-5">
+        <div class="flex items-center gap-3">
+          <span class="badge" 
+                [class.badge--success]="log.action === 'Insert' || log.action === 'Create'"
+                [class.badge--primary]="log.action === 'Update'"
+                [class.badge--danger]="log.action === 'Delete'">
+            {{ log.action === 'Create' || log.action === 'Insert' ? 'Inserción' : log.action === 'Update' ? 'Modificación' : 'Eliminación' }}
+          </span>
+          <span class="badge badge--secondary" *ngIf="isGlobalAdmin && log.branchId">
+            📍 {{ log.branchName || 'Terminal ' + (log.branchId | slice:0:8) }}
+          </span>
+          <h3 class="text-primary m-0" style="font-size: 1.15rem">{{ log.entityName || log.tableName }}</h3>
+        </div>
+        <div class="text-right">
+          <div class="text-primary font-bold small">👤 {{ log.username || log.userId || 'System' }}</div>
+          <div class="text-muted text-[10px] font-bold uppercase tracking-tighter">{{ log.timestamp | date:'dd/MM/yy • HH:mm' }}</div>
+        </div>
+      </div>
+
+      <div *ngIf="log.entityId" class="font-mono text-muted text-[10px] p-2 bg-secondary rounded-lg mb-4 border border-primary-alpha">
+        Identifier: {{ log.entityId }}
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="log.action === 'Update' && (log.oldValues || log.newValues)">
+        <div *ngIf="log.oldValues" class="p-4 bg-danger-dim rounded-2xl border border-danger-alpha">
+          <h4 class="text-danger font-bold text-[9px] uppercase tracking-widest mb-3">Valor Anterior</h4>
+          <div class="font-mono text-[10px]" *ngFor="let key of objectKeys(formatJson(log.oldValues))">
+            <span class="text-danger opacity-70">{{key}}:</span> <span class="text-muted">{{formatJson(log.oldValues)[key]}}</span>
+          </div>
+        </div>
+        <div *ngIf="log.newValues" class="p-4 bg-success-dim rounded-2xl border border-success-alpha">
+          <h4 class="text-success font-bold text-[9px] uppercase tracking-widest mb-3">Valor Nuevo</h4>
+          <div class="font-mono text-[10px]" *ngFor="let key of objectKeys(formatJson(log.newValues))">
+            <span class="text-success opacity-70">{{key}}:</span> <span class="text-muted">{{formatJson(log.newValues)[key]}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="(log.action === 'Insert' || log.action === 'Create') && log.newValues" class="p-4 bg-primary-alpha rounded-2xl border border-primary-alpha">
+        <h4 class="text-primary font-bold text-[9px] uppercase tracking-widest mb-3">Resumen de Registro</h4>
+        <div class="font-mono text-[10px]" *ngFor="let key of objectKeys(formatJson(log.newValues))">
+          <span class="text-primary opacity-70">{{key}}:</span> <span class="text-muted">{{formatJson(log.newValues)[key]}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination-footer flex justify-between items-center mt-8 pb-10">
+    <p class="text-muted small font-bold uppercase tracking-widest">
+      Página {{ page }} de {{ Math.ceil(totalCount / pageSize) }}
+    </p>
+    <div class="flex gap-2">
+      <button class="btn btn--secondary btn--sm" [disabled]="page === 1" (click)="load(page - 1)">
+        ← Anterior
+      </button>
+      <button class="btn btn--secondary btn--sm" [disabled]="logs.length < pageSize || page * pageSize >= totalCount" (click)="load(page + 1)">
+        Siguiente →
+      </button>
+    </div>
+  </div>
+</div>
+
+<ng-template #sideFilters>
+  <div class="sidebar-filters">
+    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+      <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Rango de Consulta</label>
+      <div class="flex flex-col gap-3">
+        <div>
+          <span class="text-[9px] font-bold text-slate-400 block mb-1">DESDE</span>
+          <input type="date" [(ngModel)]="startDate" class="form-control form-control--sm" />
+        </div>
+        <div>
+          <span class="text-[9px] font-bold text-slate-400 block mb-1">HASTA</span>
+          <input type="date" [(ngModel)]="endDate" class="form-control form-control--sm" />
+        </div>
+      </div>
+    </div>
+    <button class="sidebar-action-btn sidebar-action-btn--primary w-full" (click)="load(1)" [disabled]="loading">
+      <span class="sidebar-action-btn__icon">🔍</span>
+      <span class="sidebar-action-btn__label">{{ loading ? 'Cargando...' : 'Filtrar Actividad' }}</span>
+    </button>
+  </div>
+</ng-template>
