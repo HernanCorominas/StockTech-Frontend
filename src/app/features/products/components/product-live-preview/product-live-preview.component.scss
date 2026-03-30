@@ -1,0 +1,8 @@
+.preview-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+}
+
+:host-context(.dark-mode) .preview-card {
+  background: rgba(15, 23, 42, 0.7);
+}

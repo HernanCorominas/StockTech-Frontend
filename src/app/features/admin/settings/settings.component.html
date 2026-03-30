@@ -1,0 +1,119 @@
+<div class="page-header">
+  <div>
+    <h1 class="font-black">Configuración del Sistema</h1>
+    <p class="text-slate-500 font-medium">Parámetros de negocio, lógica fiscal y reglas globales</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="flex flex-col items-center justify-center p-20">
+  <div class="spinner mb-4"></div>
+  <p class="text-slate-400 font-medium">Sincronizando preferencias...</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8" *ngIf="!loading">
+  <!-- Margen de Ganancia Card -->
+  <div class="card overflow-hidden border-0 shadow-sm animate-fade-in">
+    <div class="card__header bg-slate-50/50 flex items-center gap-3">
+      <span class="text-xl">💰</span>
+      <h3 class="m-0 text-slate-700 font-black">Política de Precios</h3>
+    </div>
+    <div class="p-6">
+      <div class="form-group">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Margen de Utilidad Esperado (%)</label>
+        <div class="flex items-center gap-3">
+           <div class="relative flex-1">
+             <input type="number" class="form-control pl-10" [(ngModel)]="profitMarginValue" placeholder="30" />
+             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+           </div>
+           <button class="btn btn--primary" [disabled]="saving" (click)="saveProfitMargin()">
+             {{ saving ? '...' : 'Actualizar' }}
+           </button>
+        </div>
+        <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+          Este porcentaje define el precio de venta sugerido basado en el costo de reposición durante la recepción de mercancía.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Impuestos (ITBIS) Card -->
+  <div class="card overflow-hidden border-0 shadow-sm animate-fade-in" style="animation-delay: 0.1s">
+    <div class="card__header bg-slate-50/50 flex items-center gap-3">
+      <span class="text-xl">🏛️</span>
+      <h3 class="m-0 text-slate-700 font-black">Configuración Fiscal</h3>
+    </div>
+    <div class="p-6">
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6 font-medium">
+        <div class="flex flex-col">
+          <span class="text-slate-700">Cálculo de Impuestos (ITBIS)</span>
+          <span class="text-[10px] text-slate-400 uppercase font-black">Control Maestro</span>
+        </div>
+        <div class="toggle">
+          <input type="checkbox" id="taxToggle" [checked]="isTaxEnabled" (change)="onTaxToggle($event)" />
+          <label for="taxToggle"></label>
+        </div>
+      </div>
+      
+      <div *ngIf="isTaxEnabled" class="animate-fade-in-up">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Tasa Impositiva Predeterminada</label>
+        <div class="flex items-center gap-3">
+          <select class="form-control" [(ngModel)]="defaultTaxRate">
+            <option [value]="18">18% - Tasa Ordinaria</option>
+            <option [value]="16">16% - Tasa Reducida (Selectivo)</option>
+            <option [value]="0">0% - Exento / Exportación</option>
+          </select>
+          <button class="btn btn--primary" [disabled]="saving" (click)="saveTaxRate()">
+            {{ saving ? '...' : 'Fijar' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!isTaxEnabled" class="p-4 bg-blue-50 text-blue-600 rounded-2xl text-xs border border-blue-100">
+        ℹ️ Los cálculos de impuestos están desactivados. Todos los precios se tratarán como netos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Security Modal -->
+<div class="modal-overlay" *ngIf="showSecurityModal">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3 class="font-black text-danger">Autorización Requerida</h3>
+      <button class="btn btn--ghost btn--sm" (click)="cancelSecurityAction()">✕</button>
+    </div>
+    <div class="modal__body p-6">
+      <div class="p-4 bg-red-50 text-red-600 rounded-2xl text-xs border border-red-100 mb-6">
+        <p class="m-0 font-bold">⚠️ ADVERTENCIA CRÍTICA</p>
+        <p class="m-0 mt-1 opacity-80">Alterar el estado fiscal puede invalidar reportes históricos y cambiar la base imponible de todas las transacciones futuras.</p>
+      </div>
+      <div class="form-group">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Contraseña de Administrador</label>
+        <input type="password" class="form-control" [(ngModel)]="confirmPassword" placeholder="Confirmar identidad..." (keyup.enter)="confirmSecurityAction()" />
+      </div>
+    </div>
+    <div class="modal__footer bg-slate-50/50 p-4 border-t border-slate-100">
+      <button class="btn btn--ghost text-slate-400" (click)="cancelSecurityAction()">Cancelar</button>
+      <button class="btn btn--danger ml-auto" [disabled]="!confirmPassword || saving" (click)="confirmSecurityAction()">
+        {{ saving ? 'Validando...' : 'Confirmar Cambio Crítico' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<ng-template #settingsSidebar>
+  <div class="sidebar-filters">
+     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+       <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Estado del Sistema</p>
+       <div class="flex items-center gap-2 text-xs font-bold text-success">
+         <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+         Sincronizado
+       </div>
+     </div>
+
+     <button class="sidebar-action-btn w-full" (click)="loadSettings()" [disabled]="loading">
+       <span class="sidebar-action-btn__icon">🔄</span>
+       <span class="sidebar-action-btn__label">Recargar Ajustes</span>
+     </button>
+  </div>
+</ng-template>

@@ -1,21 +1,41 @@
 <!-- Global Floating Trigger Button -->
-<button class="appearance-trigger" (click)="toggleDialog()" aria-label="Abrir Configuración de Apariencia">
+<button class="appearance-trigger" (click)="toggleDialog()" aria-label="Abrir Configuración de Apariencia" [appFlipTrigger]="'appearance-dialog'" [class.v-hidden]="isOpen()">
   <i class="fi fi-rr-paint-roller"></i>
 </button>
 
-<!-- Backdrop (Blur) -->
-<div class="appearance-backdrop" *ngIf="isOpen()" (click)="toggleDialog()"></div>
+<!-- Backdrop (No Blur Version) -->
+<div class="appearance-backdrop" [class.active]="isOpen()" (click)="toggleDialog()"></div>
 
 <!-- Modal Dialog -->
-<div class="appearance-modal" *ngIf="isOpen()">
+<div class="appearance-modal" [class.active]="isOpen()">
   
-  <div class="appearance-modal__header">
+  <div class="appearance-modal__header" [attr.data-flip-id]="'appearance-dialog'">
     <div class="drag-handle"></div>
     <h2><i class="fi fi-rr-magic-wand"></i> Personalización Premium</h2>
     <p>Ajusta el sistema a tu preferencia visual.</p>
   </div>
 
   <div class="appearance-modal__body">
+    
+    <!-- Appearance Mode (Light/Dark) -->
+    <div class="theme-section">
+      <h3 class="theme-section__title">Arquitectura de Interfaz (Trilogía)</h3>
+      <div class="segmented-control">
+        <button 
+          class="segmented-item" 
+          [class.active]="!themeService.isDarkMode()" 
+          (click)="themeService.setDarkMode(false)">
+          <i class="fi fi-rr-snowflake"></i> Arctic Enterprise
+        </button>
+        <button 
+          class="segmented-item" 
+          [class.active]="themeService.isDarkMode()" 
+          (click)="themeService.setDarkMode(true)">
+          <i class="fi fi-rr-eclipse"></i> Enterprise Obsidian
+        </button>
+      </div>
+      <p class="theme-section__desc mt-2">Próximamente: <b>Apple Pro Glass</b> (Transparencia Progresiva)</p>
+    </div>
     
     <!-- Theme Selection -->
     <div class="theme-section">

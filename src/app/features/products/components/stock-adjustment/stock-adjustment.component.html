@@ -1,0 +1,79 @@
+<div class="inline-form-panel" [class.active]="isActive">
+  <div class="inline-form-panel__header">
+    <div>
+      <h3 class="font-black text-primary">Ajuste de Stock</h3>
+      <p class="text-muted small">Registro de entrada, salida o ajuste de existencias</p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="onClose.emit()">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+    <div *ngIf="error" class="alert alert--danger">{{ error }}</div>
+
+    <div class="form-group">
+      <label class="text-[10px] uppercase font-black tracking-widest text-muted">Producto *</label>
+      <select [(ngModel)]="selectedProductId" (ngModelChange)="onProductChange()" class="form-control" [class.is-invalid]="showErrors && !selectedProductId">
+        <option value="">Seleccionar producto...</option>
+        <option *ngFor="let p of products" [value]="p.id">
+          {{ p.name }} — Stock actual: {{ p.stock }}
+        </option>
+      </select>
+      <div *ngIf="showErrors && !selectedProductId" class="error-msg">Selecciona un producto</div>
+    </div>
+
+    <div class="form-group" *ngIf="variants.length > 0">
+      <label class="text-[10px] uppercase font-black tracking-widest text-muted">Variante (opcional)</label>
+      <select [(ngModel)]="selectedVariantId" class="form-control">
+        <option value="">Sin variante (producto general)</option>
+        <option *ngFor="let v of variants" [value]="v.id">
+          {{ v.color || '' }} {{ v.size || '' }} — SKU: {{ v.sku }} • Stock: {{ v.stock }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="text-[10px] uppercase font-black tracking-widest text-muted">Tipo de Movimiento *</label>
+      <select [(ngModel)]="movementType" class="form-control">
+        <option [value]="TransactionType.Purchase">Entrada Manual (Compra/Recepción)</option>
+        <option [value]="TransactionType.Adjustment">Ajuste (Corrección de inventario)</option>
+        <option [value]="TransactionType.Transfer">Transferencia entre sucursales</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-2 gap-5">
+      <div class="form-group">
+        <label class="text-[10px] uppercase font-black tracking-widest text-muted">Cantidad *</label>
+        <div style="position: relative">
+          <input type="number" [(ngModel)]="quantity" class="form-control"
+            placeholder="Ej: 50" min="0.01" step="0.01" [class.is-invalid]="showErrors && !quantity" />
+        </div>
+        <div *ngIf="showErrors && !quantity" class="error-msg">Indica la cantidad</div>
+        <p class="text-muted" style="font-size: 0.7rem; margin-top: 4px; font-weight: 600;">
+          Positivo = entrada de stock. Negativo = salida/reducción.
+        </p>
+      </div>
+      <div class="form-group">
+        <label class="text-[10px] uppercase font-black tracking-widest text-muted">Referencia / Nota</label>
+        <input type="text" [(ngModel)]="referenceNumber" class="form-control"
+          placeholder="Ej: OC-2024-001, corrección física..." />
+      </div>
+    </div>
+
+    <div *ngIf="selectedProductId" class="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] text-xs font-bold">
+      <span class="text-muted uppercase tracking-widest">Stock actual: </span>
+      <span class="text-primary">{{ currentStock }}</span>
+      <span *ngIf="quantity" class="ml-4 text-muted uppercase tracking-widest">→ Tras ajuste: </span>
+      <span *ngIf="quantity" class="ml-1"
+        [class.text-success]="(currentStock + (quantity || 0)) >= 0"
+        [class.text-danger]="(currentStock + (quantity || 0)) < 0">
+        {{ currentStock + (quantity || 0) }}
+      </span>
+    </div>
+  </div>
+  <div class="inline-form-panel__footer bg-[var(--bg-primary)]">
+    <button class="btn btn--secondary" (click)="onClose.emit()">Cancelar</button>
+    <button class="btn btn--primary" (click)="save()"
+      [disabled]="saving || (showErrors && (!selectedProductId || !quantity))">
+      {{ saving ? 'Guardando...' : 'Registrar Movimiento' }}
+    </button>
+  </div>
+</div>

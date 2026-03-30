@@ -1,0 +1,59 @@
+<div class="inline-form-panel" [class.active]="isActive">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="flipId">
+    <h3>{{ supplier ? 'Editar Suplidor' : 'Nuevo Suplidor' }}</h3>
+    <button class="btn btn--ghost btn--sm" (click)="onCancel.emit()" [disabled]="saving">✕</button>
+  </div>
+
+  <div class="inline-form-panel__body">
+    <div *ngIf="error" class="alert alert--danger mb-4 flex items-center gap-2">
+      <span>⚠️</span> {{ error }}
+    </div>
+
+    <div class="form-group">
+      <label>Nombre de la Empresa *</label>
+      <input class="form-control" [(ngModel)]="form.name" placeholder="Ej. Tech Supplies SRL" [class.is-invalid]="submitted && !form.name" />
+      <div *ngIf="submitted && !form.name" class="error-msg">El nombre es obligatorio</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre de Contacto</label>
+        <input class="form-control" [(ngModel)]="form.contactName" placeholder="Ej. Juan Pérez" />
+      </div>
+      <div class="form-group">
+        <label>RNC / Cédula *</label>
+        <input class="form-control" [(ngModel)]="form.taxId" placeholder="130-12345-6" [class.is-invalid]="submitted && !form.taxId" />
+        <div *ngIf="submitted && !form.taxId" class="error-msg">RNC/Cédula es obligatorio</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email *</label>
+        <input class="form-control" type="email" [(ngModel)]="form.email" placeholder="contacto@suplidor.com" [class.is-invalid]="submitted && !form.email" />
+        <div *ngIf="submitted && !form.email" class="error-msg">Email es obligatorio</div>
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input class="form-control" [(ngModel)]="form.phone" placeholder="809-555-1111" />
+      </div>
+    </div>
+
+    <div class="form-group border-t border-subtle pt-4 mt-2" *ngIf="branchItems.length > 1">
+      <app-shared-dropdown
+        label="Vincular a Sucursal (Opcional)"
+        placeholder="Seleccionar sucursal"
+        [items]="branchItems"
+        [(value)]="form.branchId">
+      </app-shared-dropdown>
+      <p class="text-xs text-muted mt-2 italic px-1">Si no se selecciona una sucursal, el suplidor será visible para todas (solo Admins).</p>
+    </div>
+  </div>
+
+  <div class="inline-form-panel__footer">
+    <button class="btn btn--secondary" (click)="onCancel.emit()" [disabled]="saving">Cancelar</button>
+    <button class="btn btn--primary shadow-lg shadow-emerald-200" (click)="save()" [disabled]="saving || (submitted && (!form.name || !form.taxId || !form.email))">
+      {{ saving ? 'Guardando...' : (supplier ? 'Actualizar Cambios' : 'Registrar Suplidor') }}
+    </button>
+  </div>
+</div>

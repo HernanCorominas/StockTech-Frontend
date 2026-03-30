@@ -1,0 +1,56 @@
+<div class="overlay" [class.active]="showForm" (click)="closeForm()"></div>
+<div class="page-header" #header>
+    <div>
+      <h1 class="font-black">Suplidores</h1>
+      <p class="text-slate-500 font-medium">{{ suppliers.length }} registrados {{ branchState.hasSelection() ? '(En Sucursal)' : '(Global)' }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center p-20">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="card overflow-hidden" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Contacto</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>RNC / Cédula</th>
+          <th>Sucursal</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of suppliers" #row [appFlipTrigger]="'supplier-row-' + s.id">
+          <td class="fw-bold text-primary">{{ s.name }}</td>
+          <td>{{ s.contactName }}</td>
+          <td>{{ s.phone }}</td>
+          <td class="text-emerald-600 font-medium">{{ s.email }}</td>
+          <td class="font-mono text-xs bg-secondary px-2 py-1 rounded border border-subtle">{{ s.taxId }}</td>
+          <td>
+            <span class="badge badge--ghost">{{ s.branchName || 'General' }}</span>
+          </td>
+          <td>
+            <button class="btn btn--secondary btn--sm" (click)="editSupplier(s)" [appFlipTrigger]="'supplier-action'">Editar</button>
+          </td>
+        </tr>
+        <tr *ngIf="suppliers.length === 0">
+          <td colspan="7" style="text-align:center;padding:60px" class="text-muted">
+             <div class="text-4xl mb-2">📦</div>
+             Sin suplidores registrados.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <app-supplier-form
+    [supplier]="selectedSupplier"
+    [isActive]="showForm"
+    [flipId]="'supplier-action'"
+    (onSave)="onSupplierSaved($event)"
+    (onCancel)="closeForm()">
+  </app-supplier-form>

@@ -1,0 +1,67 @@
+<div class="pos-container">
+  <!-- Main Area -->
+  <div class="pos-main">
+    <header class="pos-header">
+      <button class="btn btn-icon" routerLink="/dashboard" title="Volver al inicio">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <div class="pos-title">Punto de Venta</div>
+      
+      <!-- Optional top bar actions here -->
+      <div style="flex: 1"></div>
+      
+      <div class="search-input">
+        <input type="text" placeholder="Buscar productos (F4)..." />
+      </div>
+    </header>
+
+    <div class="pos-content-scroll">
+      <app-product-grid 
+        [products]="products()" 
+        (add)="addToCart($event)">
+      </app-product-grid>
+    </div>
+  </div>
+
+  <!-- Right Sidebar Area -->
+  <div class="pos-cart-sidebar">
+    <app-cart-panel
+      [items]="cart()"
+      [subtotal]="subtotal()"
+      [taxRate]="taxRate()"
+      (updateQuantity)="updateQuantity($event.item, $event.quantity)"
+      (remove)="removeFromCart($event)"
+      (clear)="clearCart()">
+    </app-cart-panel>
+
+    <div class="pos-cart-actions">
+      <app-client-selector
+          [isExpress]="isExpressClient()"
+          [clients]="clients()"
+          (toggleExpress)="isExpressClient.set(!isExpressClient())"
+          (clientChange)="selectedClient.set($event)"
+          (expressNameChange)="expressName.set($event)"
+          (expressDocumentChange)="expressDocument.set($event)">
+      </app-client-selector>
+
+      <button class="btn btn--primary btn-large btn-checkout" 
+              [disabled]="cart().length === 0"
+              (click)="showCheckout.set(true)">
+         COBRAR <span class="shortcut-tip">↵ Enter</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-checkout-modal 
+   *ngIf="showCheckout()"
+   [cart]="cart()"
+   [subtotal]="subtotal()"
+   [taxRate]="taxRate()"
+   [isExpress]="isExpressClient()"
+   [client]="selectedClient()"
+   [expressName]="expressName()"
+   [expressDocument]="expressDocument()"
+   (close)="showCheckout.set(false)"
+   (success)="clearCart(); showCheckout.set(false)">
+</app-checkout-modal>

@@ -1,0 +1,66 @@
+<div class="kardex-header mb-6 flex justify-between items-center">
+  <div>
+    <h2 class="text-xl font-black">{{ productName }}</h2>
+    <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Kardex / Historial de Movimientos</p>
+  </div>
+  <div class="flex gap-3">
+    <button class="btn btn--secondary btn--sm" (click)="showFilterPanel = true">
+      <span class="mr-2">🔍</span> Filtros
+    </button>
+    <button class="btn btn--ghost btn--sm" (click)="close.emit()">Cerrar</button>
+  </div>
+</div>
+
+<app-filter-chips [chips]="activeChips" (remove)="removeFilter($event)" (clearAll)="clearFilters()"></app-filter-chips>
+
+<div class="kardex-body overflow-x-auto">
+  <table class="modern-table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th width="120">Tipo</th>
+        <th width="100">Cant.</th>
+        <th width="120">Stock Ant.</th>
+        <th width="120">Nuevo Stock</th>
+        <th>Referencia</th>
+        <th>Usuario</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let m of movements" class="hover:bg-slate-50 border-b border-slate-100 last:border-0">
+        <td class="py-3">
+          <div class="text-[11px] font-bold">{{ m.transactionDate | date:'dd/MM/yyyy' }}</div>
+          <div class="text-[9px] text-muted">{{ m.transactionDate | date:'HH:mm:ss' }}</div>
+        </td>
+        <td>
+          <span class="badge" 
+            [class.badge--success]="m.type === 1 || m.type === 4" 
+            [class.badge--danger]="m.type === 2 || m.type === 3">
+            {{ getTypeName(m.type) }}
+          </span>
+        </td>
+        <td class="font-black" [class.text-success]="m.type === 1 || m.type === 4" [class.text-danger]="m.type === 2 || m.type === 3">
+          {{ m.type === 2 || m.type === 3 ? '-' : '+' }}{{ m.quantity | number:'1.2-2' }}
+        </td>
+        <td class="text-muted text-sm">{{ m.previousStock | number:'1.2-2' }}</td>
+        <td class="font-black text-primary">{{ m.newStock | number:'1.2-2' }}</td>
+        <td class="text-[10px] text-muted font-mono">{{ m.referenceNumber || 'N/A' }}</td>
+        <td>
+          <div class="text-[10px] font-bold text-slate-700">{{ m.userName || 'SISTEMA' }}</div>
+          <div class="text-[8px] text-muted uppercase tracking-tighter">{{ m.branchName }}</div>
+        </td>
+      </tr>
+      <tr *ngIf="movements.length === 0">
+        <td colspan="7" class="empty">No se encontraron movimientos registrados.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<app-filter-panel
+  [isVisible]="showFilterPanel"
+  [filters]="filterConfig"
+  (onApply)="applyFilters($event)"
+  (onClear)="clearFilters()"
+  (onClose)="showFilterPanel = false">
+</app-filter-panel>

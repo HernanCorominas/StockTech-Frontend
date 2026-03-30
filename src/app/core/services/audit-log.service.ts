@@ -6,7 +6,7 @@ import { AuditLog, PagedResult } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class AuditLogService {
-  private api = `${environment.apiUrl}/v1/AuditLogs`;
+  private api = `${environment.apiUrl}/v1/Audit`;
   private http = inject(HttpClient);
 
   getLogs(page: number, pageSize: number, filters: any): Observable<PagedResult<AuditLog>> {

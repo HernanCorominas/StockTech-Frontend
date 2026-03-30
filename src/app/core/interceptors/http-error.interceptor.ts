@@ -1,9 +1,11 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { ToastService } from '../services/toast.service';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
 export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
+  const toast = inject(ToastService);
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMsg = 'Ocurrió un error inesperado.';
@@ -27,8 +29,8 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
       // Format a concise alert message
       const alertMsg = details ? `${errorMsg}\n\nDetalles:\n${details}` : errorMsg;
       
-      // We use a basic window.alert for now, but this could be replaced by a Toast/Snackbar service
-      alert(alertMsg);
+      toast.error(alertMsg, 6000);
+      
       console.error('HTTP Error Interceptor:', error);
 
       return throwError(() => new Error(alertMsg));

@@ -1,7 +1,10 @@
 import { Component, Input, OnInit, AfterViewInit, ViewChild, ElementRef, inject, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { Chart, registerables } from 'chart.js';
-import { Dashboard } from '../../../../core/models/models';
+import { Dashboard, MonthlySummary, CategoryStock } from '../../../../core/models';
+import { AnimationService } from '../../../../core/services/animation.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 
 Chart.register(...registerables);
 
@@ -9,29 +12,8 @@ Chart.register(...registerables);
   selector: 'app-dashboard-charts',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      <!-- Sales Trend -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
-        <h3 class="text-sm font-bold text-slate-900 mb-4 uppercase letter-spacing-wide">Tendencia de Ventas (6 Meses)</h3>
-        <div class="flex-1 relative">
-          <canvas #salesChart></canvas>
-        </div>
-      </div>
-
-      <!-- Inventory Distribution -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
-        <h3 class="text-sm font-bold text-slate-900 mb-4 uppercase letter-spacing-wide">Distribución de Inventario</h3>
-        <div class="flex-1 relative flex items-center justify-center">
-          <canvas #categoryChart></canvas>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; }
-    canvas { width: 100% !important; height: 100% !important; }
-  `]
+  templateUrl: './dashboard-charts.component.html',
+  styleUrls: ['./dashboard-charts.component.scss']
 })
 export class DashboardChartsComponent implements AfterViewInit, OnChanges {
   @Input() data!: Dashboard;
@@ -39,11 +21,25 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
   @ViewChild('salesChart') salesChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
 
+  @ViewChild('salesPanel') salesPanelRef!: ElementRef<HTMLElement>;
+  @ViewChild('categoryPanel') categoryPanelRef!: ElementRef<HTMLElement>;
+
   private salesChart?: Chart;
   private categoryChart?: Chart;
 
+  private theme = inject(ThemeService);
+
+  constructor(private anime: AnimationService) {
+    toObservable(this.theme.isDarkMode).subscribe(() => {
+      this.updateChartColors();
+    });
+  }
+
   ngAfterViewInit() {
     this.createCharts();
+    setTimeout(() => {
+        this.anime.staggerIn([this.salesPanelRef.nativeElement, this.categoryPanelRef.nativeElement], 0.1);
+    }, 400);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -58,16 +54,15 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
     const style = getComputedStyle(document.documentElement);
     const accent = style.getPropertyValue('--accent').trim() || '#3b82f6';
 
-    // Sales Chart
     this.salesChart = new Chart(this.salesChartRef.nativeElement, {
       type: 'line',
       data: {
-        labels: this.data.monthlySales.map(s => s.month),
+        labels: this.data.monthlySales.map((s: MonthlySummary) => s.month),
         datasets: [{
           label: 'Ventas (RD$)',
-          data: this.data.monthlySales.map(s => s.total),
+          data: this.data.monthlySales.map((s: MonthlySummary) => s.total),
           borderColor: accent,
-          backgroundColor: `${accent}1a`, // 10% opacity
+          backgroundColor: `${accent}1a`,
           borderWidth: 4,
           fill: true,
           tension: 0.4,
@@ -84,7 +79,6 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
         scales: {
           y: { 
             beginAtZero: true, 
-            grid: { color: 'rgba(0,0,0,0.03)' },
             border: { display: false }
           },
           x: { 
@@ -95,13 +89,12 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
       }
     });
 
-    // Category Chart
     this.categoryChart = new Chart(this.categoryChartRef.nativeElement, {
       type: 'doughnut',
       data: {
-        labels: this.data.categoryDistribution.map(c => c.category),
+        labels: this.data.categoryDistribution.map((c: CategoryStock) => c.category),
         datasets: [{
-          data: this.data.categoryDistribution.map(c => c.stockCount),
+          data: this.data.categoryDistribution.map((c: CategoryStock) => c.stockCount),
           backgroundColor: [
             accent, '#10b981', '#f59e0b', '#8b5cf6', '#3b82f6', '#94a3b8'
           ],
@@ -124,17 +117,45 @@ export class DashboardChartsComponent implements AfterViewInit, OnChanges {
         }
       }
     });
+
+    this.updateChartColors();
+  }
+
+  private updateChartColors() {
+    if (!this.salesChart && !this.categoryChart) return;
+
+    const isDark = this.theme.isDarkMode();
+    const textColor = isDark ? '#FFFFFF' : '#000000';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+    if (this.salesChart) {
+      if (this.salesChart.options.scales?.['y']) {
+        this.salesChart.options.scales['y'].grid = { color: gridColor };
+        this.salesChart.options.scales['y'].ticks = { color: textColor };
+      }
+      if (this.salesChart.options.scales?.['x']) {
+        this.salesChart.options.scales['x'].ticks = { color: textColor };
+      }
+      this.salesChart.update();
+    }
+
+    if (this.categoryChart) {
+      if (this.categoryChart.options.plugins?.legend?.labels) {
+        this.categoryChart.options.plugins.legend.labels.color = textColor;
+      }
+      this.categoryChart.update();
+    }
   }
 
   private updateCharts() {
     if (this.salesChart) {
-      this.salesChart.data.labels = this.data.monthlySales.map(s => s.month);
-      this.salesChart.data.datasets[0].data = this.data.monthlySales.map(s => s.total);
+      this.salesChart.data.labels = this.data.monthlySales.map((s: MonthlySummary) => s.month);
+      this.salesChart.data.datasets[0].data = this.data.monthlySales.map((s: MonthlySummary) => s.total);
       this.salesChart.update();
     }
     if (this.categoryChart) {
-      this.categoryChart.data.labels = this.data.categoryDistribution.map(c => c.category);
-      this.categoryChart.data.datasets[0].data = this.data.categoryDistribution.map(c => c.stockCount);
+      this.categoryChart.data.labels = this.data.categoryDistribution.map((c: CategoryStock) => c.category);
+      this.categoryChart.data.datasets[0].data = this.data.categoryDistribution.map((c: CategoryStock) => c.stockCount);
       this.categoryChart.update();
     }
   }

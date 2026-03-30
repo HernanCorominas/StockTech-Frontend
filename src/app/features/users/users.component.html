@@ -1,0 +1,100 @@
+<div class="overlay" [class.active]="showForm()" (click)="closeForm()"></div>
+<div class="page-header" [class.v-hidden]="showForm()">
+  <div>
+    <h1 class="font-black">Usuarios</h1>
+    <p class="text-muted small">Cuentas de acceso y privilegios • {{ users().length }} usuarios en el sistema</p>
+  </div>
+</div>
+
+<div *ngIf="loading()" class="spinner"></div>
+
+<div class="card" *ngIf="!loading()" [class.v-hidden]="showForm()">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Usuario</th>
+        <th>Rol</th>
+        <th>Email</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let u of users()" #row [appFlipTrigger]="'user-row-' + u.id">
+        <td class="fw-semibold">{{ u.fullName }}</td>
+        <td class="font-mono text-muted">{{ u.username }}</td>
+        <td><span class="badge badge--secondary">{{ u.role.name || 'User' }}</span></td>
+        <td>{{ u.email }}</td>
+        <td>
+          <span class="badge" [class.badge--success]="u.isActive" [class.badge--danger]="!u.isActive">
+            {{ u.isActive ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+        <td style="display:flex; gap:4px">
+          <button *ngIf="canModifyUser(u)" class="btn btn--secondary btn--sm" (click)="editUser(u); $event.stopPropagation()" [appFlipTrigger]="'user-action'">Editar</button>
+          <button *ngIf="canModifyUser(u)" class="btn-icon btn-icon--danger" (click)="deleteUser(u.id)" title="Eliminar">
+            <span class="icon">🗑️</span>
+          </button>
+          <span *ngIf="!canModifyUser(u)" class="text-xs text-muted italic p-2">Protegido</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Inline Form Panel -->
+<div class="inline-form-panel" [class.active]="showForm()">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'user-action'">
+    <h3>{{ isEditing ? 'Editar Usuario' : 'Nuevo Usuario' }}</h3>
+    <button class="btn btn--ghost btn--sm" (click)="closeForm()" [disabled]="saving">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+     <div class="form-row">
+       <div class="form-group">
+         <label>Nombre Completo *</label>
+         <input type="text" [(ngModel)]="form.fullName" class="form-control" [class.is-invalid]="submitted && !form.fullName" />
+         <div *ngIf="submitted && !form.fullName" class="error-msg">Requerido</div>
+       </div>
+       <div class="form-group">
+         <label>Nombre de Usuario *</label>
+         <input type="text" [(ngModel)]="form.username" class="form-control" [disabled]="isEditing" [class.is-invalid]="submitted && !form.username" />
+         <div *ngIf="submitted && !form.username" class="error-msg">Requerido</div>
+       </div>
+     </div>
+     <div class="form-row">
+       <div class="form-group">
+         <label>Email *</label>
+         <input type="email" [(ngModel)]="form.email" class="form-control" [class.is-invalid]="submitted && !form.email" />
+         <div *ngIf="submitted && !form.email" class="error-msg">Email requerido</div>
+       </div>
+       <div class="form-group">
+         <label>Rol *</label>
+         <select [(ngModel)]="form.roleId" class="form-control" [class.is-invalid]="submitted && !form.roleId">
+           <option value="">Seleccionar rol...</option>
+           <option *ngFor="let r of roles()" [value]="r.id">{{ r.name }}</option>
+         </select>
+         <div *ngIf="submitted && !form.roleId" class="error-msg">Rol requerido</div>
+       </div>
+     </div>
+       <div class="form-group" *ngIf="isGlobalAdmin()">
+         <label>Sucursal <span *ngIf="!isFormRoleAdmin()">*</span></label>
+         <select [(ngModel)]="form.branchId" class="form-control" [class.is-invalid]="submitted && !isFormRoleAdmin() && !form.branchId">
+           <option value="">{{ isFormRoleAdmin() ? '— Sin Sucursal (Global) —' : 'Seleccionar sucursal...' }}</option>
+           <option *ngFor="let b of branches()" [value]="b.id">{{ b.name }}</option>
+         </select>
+         <div *ngIf="submitted && !isFormRoleAdmin() && !form.branchId" class="error-msg">Sucursal requerida para este rol</div>
+       </div>
+      <div class="form-group" *ngIf="!isEditing">
+        <label>Contraseña *</label>
+        <input type="password" [(ngModel)]="form.password" class="form-control" [class.is-invalid]="submitted && !form.password" />
+        <div *ngIf="submitted && !form.password" class="error-msg">Contraseña requerida</div>
+      </div>
+   </div>
+   <div class="inline-form-panel__footer">
+     <button class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+     <button class="btn btn--primary" (click)="save()" [disabled]="saving || (submitted && (!form.fullName || !form.username || !form.email || !form.roleId || (!isEditing && !form.password) || (!isFormRoleAdmin() && !form.branchId)))">
+       {{ saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear Usuario') }}
+     </button>
+   </div>
+</div>

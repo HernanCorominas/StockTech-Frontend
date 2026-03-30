@@ -10,6 +10,7 @@ export interface UserDto {
   email: string;
   roleId: string;
   role: { name: string };
+  branchId: string;
   isActive: boolean;
 }
 
@@ -21,14 +22,17 @@ export interface RoleDto {
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/users`;
+  private apiUrl = `${environment.apiUrl}/v1/users`;
 
   users = signal<UserDto[]>([]);
   loading = signal(false);
 
-  getAll(): Observable<UserDto[]> {
+  getAll(branchId?: string): Observable<UserDto[]> {
     this.loading.set(true);
-    return this.http.get<UserDto[]>(this.apiUrl).pipe(
+    let url = this.apiUrl;
+    if (branchId) url += `?branchId=${branchId}`;
+    
+    return this.http.get<UserDto[]>(url).pipe(
       tap(users => {
         this.users.set(users);
         this.loading.set(false);
@@ -37,7 +41,7 @@ export class UserService {
   }
 
   getRoles(): Observable<RoleDto[]> {
-    return this.http.get<RoleDto[]>(`${environment.apiUrl}/api/v1/roles`);
+    return this.http.get<RoleDto[]>(`${environment.apiUrl}/v1/roles`);
   }
 
   create(user: any): Observable<UserDto> {

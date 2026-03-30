@@ -1,0 +1,15 @@
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+  <div class="card p-6 flex flex-col h-[400px] opacity-0" #salesPanel>
+    <h3 class="text-sm font-bold text-primary mb-4 uppercase tracking-wider">Tendencia de Ventas (6 Meses)</h3>
+    <div class="flex-1 relative">
+      <canvas #salesChart></canvas>
+    </div>
+  </div>
+
+  <div class="card p-6 flex flex-col h-[400px] opacity-0" #categoryPanel>
+    <h3 class="text-sm font-bold text-primary mb-4 uppercase tracking-wider">Distribución de Inventario</h3>
+    <div class="flex-1 relative flex items-center justify-center">
+      <canvas #categoryChart></canvas>
+    </div>
+  </div>
+</div>

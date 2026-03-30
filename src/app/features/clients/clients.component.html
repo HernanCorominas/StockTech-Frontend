@@ -1,0 +1,98 @@
+<div class="overlay" [class.active]="showForm" (click)="closeForm()"></div>
+<div class="page-header" [class.v-hidden]="showForm">
+  <div>
+    <h1 class="font-black">Clientes</h1>
+    <p class="text-muted small">Cuentas por cobrar y datos fiscales • {{ clients.length }} registros en total</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div class="card" *ngIf="!loading" [class.v-hidden]="showForm" style="padding: 0; overflow: hidden">
+   <table class="data-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Documento</th>
+          <th>Tipo</th>
+          <th>Contacto</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of clients" #row [appFlipTrigger]="'client-row-' + c.id">
+          <td>
+            <div class="fw-bold text-primary">{{ c.name }}</div>
+            <div class="text-muted smaller">{{ c.email || 'Sin correo' }}</div>
+          </td>
+          <td class="font-mono small">{{ c.document }}</td>
+          <td><span class="badge badge--secondary">{{ c.clientTypeName }}</span></td>
+          <td class="small">{{ c.phone || '—' }}</td>
+          <td>
+            <span class="badge" [class.badge--success]="c.isActive" [class.badge--danger]="!c.isActive">
+              {{ c.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn--secondary btn--sm" (click)="editClient(c)" [appFlipTrigger]="'client-action'">Editar</button>
+          </td>
+        </tr>
+      </tbody>
+   </table>
+</div>
+
+<!-- Inline Form Panel (iOS Morph) -->
+<div class="inline-form-panel" [class.active]="showForm">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'client-action'">
+    <div>
+      <h3>{{ selectedClient ? 'Editar Cliente' : 'Nuevo Cliente' }}</h3>
+      <p class="text-muted small">Información de contacto y fiscal</p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="closeForm()" [disabled]="saving">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+     <div class="form-group">
+       <label>Nombre Completo *</label>
+       <input type="text" [(ngModel)]="form.name" class="form-control" [class.is-invalid]="submitted && !form.name" placeholder="Nombre completo o Razón Social" />
+       <div *ngIf="submitted && !form.name" class="error-msg">El nombre es obligatorio</div>
+     </div>
+     
+     <div style="display: flex; gap: 16px">
+       <div class="form-group flex-1">
+         <label>RNC / Cédula *</label>
+         <input type="text" [(ngModel)]="form.document" class="form-control" [class.is-invalid]="submitted && !form.document" placeholder="000-00000-0" />
+         <div *ngIf="submitted && !form.document" class="error-msg">Requerido</div>
+       </div>
+       <div class="form-group flex-1">
+         <label>Tipo de Cliente</label>
+         <select [(ngModel)]="form.clientType" class="form-control">
+           <option [ngValue]="0">Persona Física</option>
+           <option [ngValue]="1">Persona Jurídica</option>
+         </select>
+       </div>
+     </div>
+
+     <div style="display: flex; gap: 16px">
+       <div class="form-group flex-1">
+         <label>Email</label>
+         <input type="email" [(ngModel)]="form.email" class="form-control" placeholder="correo@ejemplo.com" />
+       </div>
+       <div class="form-group flex-1">
+         <label>Teléfono</label>
+         <input type="text" [(ngModel)]="form.phone" class="form-control" placeholder="809-000-0000" />
+       </div>
+     </div>
+
+     <div class="form-group">
+       <label>Dirección</label>
+       <textarea [(ngModel)]="form.address" rows="2" class="form-control" placeholder="Dirección física completa..."></textarea>
+     </div>
+  </div>
+  <div class="inline-form-panel__footer">
+    <button class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+    <button class="btn btn--primary" (click)="save()" [disabled]="saving || (submitted && (!form.name || !form.document))">
+      {{ saving ? '...' : (selectedClient ? 'Actualizar' : 'Crear Cliente') }}
+    </button>
+  </div>
+</div>

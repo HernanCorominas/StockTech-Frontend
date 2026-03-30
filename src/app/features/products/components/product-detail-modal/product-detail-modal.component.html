@@ -1,0 +1,104 @@
+<div class="modal-overlay" (click)="onClose.emit()">
+  <div class="modal-content overflow-hidden" (click)="$event.stopPropagation()">
+    <div class="modal-header border-none p-8 pb-4">
+      <div>
+        <h2 class="font-black text-3xl tracking-tighter text-primary">{{ product.name }}</h2>
+        <div class="flex gap-2 mt-2">
+          <span class="badge badge--secondary font-mono text-[10px] tracking-widest uppercase">{{ product.sku }}</span>
+          <span class="badge font-black text-[10px] tracking-widest uppercase" 
+                [class.badge--success]="!isLowStock"
+                [class.badge--warning]="isLowStock">
+            {{ product.categoryName || 'General' }}
+          </span>
+        </div>
+      </div>
+      <button class="btn btn--ghost btn--sm p-2 rounded-full" (click)="onClose.emit()">✕</button>
+    </div>
+
+    <div class="modal-body p-8 pt-0">
+      <!-- Hero Image Section -->
+      <div class="w-full h-64 mb-8 rounded-3xl overflow-hidden bg-[var(--bg-secondary)] border border-[var(--border-subtle)] relative group">
+        <img *ngIf="product.image" [src]="product.image" 
+             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+             [alt]="product.name" />
+        <div *ngIf="!product.image" class="w-full h-full flex flex-col items-center justify-center gap-4 opacity-40">
+          <span class="text-6xl">📦</span>
+          <span class="text-xs font-bold uppercase tracking-widest">Sin Imagen</span>
+        </div>
+         
+         <div class="absolute top-6 left-6">
+            <span class="badge badge--accent px-4 py-2 text-[10px] tracking-[0.2em] shadow-xl">PREMIUM ASSET</span>
+         </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-8 mt-4">
+        <div class="space-y-6">
+          <div role="group">
+            <label class="block text-[10px] uppercase font-black tracking-widest text-muted mb-2">Valuación Comercial</label>
+            <div class="flex items-end gap-3">
+              <span class="text-4xl font-black text-primary tracking-tighter">RD$ {{ product.price | number:'1.2-2' }}</span>
+              <span class="text-xs text-muted font-bold mb-2">PVP sugerido</span>
+            </div>
+            <div class="text-[10px] text-muted font-black mt-2 uppercase tracking-widest">Costo de Adquisición: RD$ {{ product.cost | number:'1.2-2' }}</div>
+          </div>
+
+          <div role="group">
+            <label class="block text-[10px] uppercase font-black tracking-widest text-muted mb-2">Estado de Inventario</label>
+            <div class="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                   [class.bg-green-100]="!isLowStock"
+                   [class.bg-amber-100]="isLowStock"
+                   [class.text-green-600]="!isLowStock"
+                   [class.text-amber-600]="isLowStock">
+                 📦
+              </div>
+              <div>
+                <div class="text-2xl font-black text-primary">{{ product.stock }} <span class="text-xs">U.</span></div>
+                <div class="text-[10px] font-bold uppercase tracking-widest"
+                     [class.text-green-600]="!isLowStock"
+                     [class.text-amber-600]="isLowStock">
+                  {{ isLowStock ? 'Bajo Stock' : 'Stock Normal' }}
+                </div>
+              </div>
+            </div>
+            <div class="text-[10px] text-muted font-bold mt-3 px-1 uppercase tracking-widest">Umbral de Alerta: {{ product.minStock }} Unidades</div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+           <div role="group">
+              <label class="block text-[10px] uppercase font-black tracking-widest text-muted mb-2">Origen y Logística</label>
+              <div class="p-4 rounded-2xl border border-[var(--border-subtle)] space-y-3">
+                 <div class="flex justify-between items-center">
+                   <span class="text-[10px] font-bold text-muted uppercase">Suplidor</span>
+                   <span class="text-xs font-black text-primary">{{ product.supplierName || 'Suministro Directo' }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-[10px] font-bold text-muted uppercase">Sucursal</span>
+                   <span class="text-xs font-black text-primary">Sede Principal</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-[10px] font-bold text-muted uppercase">Estado</span>
+                   <span class="badge" [class.badge--success]="product.isActive" [class.badge--danger]="!product.isActive">
+                      {{ product.isActive ? 'Activo' : 'Inactivo' }}
+                   </span>
+                 </div>
+              </div>
+           </div>
+
+           <div role="group">
+              <label class="block text-[10px] uppercase font-black tracking-widest text-muted mb-2">Especificaciones</label>
+              <div class="p-4 rounded-2xl bg-[var(--bg-primary)] border border-dashed border-[var(--border-bright)] min-h-[100px]">
+                 <p class="text-xs text-muted leading-relaxed">{{ product.description || 'Sin descripción técnica registrada para este activo.' }}</p>
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer p-8 bg-[var(--bg-secondary)] flex justify-end gap-3">
+       <button class="btn btn--secondary" (click)="onClose.emit()">Cerrar</button>
+       <button class="btn btn--primary" (click)="onEdit.emit()">Editar Producto</button>
+    </div>
+  </div>
+</div>

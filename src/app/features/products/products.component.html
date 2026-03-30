@@ -1,0 +1,27 @@
+<div class="overlay" [class.active]="showForm() || showAdjustment()" (click)="closeAll()"></div>
+<div class="page-header" [class.v-hidden]="showForm() || showAdjustment()">
+  <div>
+    <h1>Inventario</h1>
+    <p class="text-muted small">Catálogo maestro • {{ products.length }} registrados</p>
+  </div>
+</div>
+
+<app-product-list #list
+  [class.v-hidden]="showForm() || showAdjustment()"
+  (onCreate)="openForm()"
+  (onEdit)="openEdit($event)">
+</app-product-list>
+
+<app-product-wizard
+  [isActive]="showForm()"
+  [product]="editProduct()"
+  (onSave)="onSave()"
+  (onCancel)="closeForm()">
+</app-product-wizard>
+
+<app-stock-adjustment
+  *ngIf="showAdjustment()"
+  [isActive]="showAdjustment()"
+  (onClose)="closeAdjustment()"
+  (onSaved)="onAdjustmentSaved()">
+</app-stock-adjustment>

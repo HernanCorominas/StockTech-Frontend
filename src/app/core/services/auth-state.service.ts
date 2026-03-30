@@ -1,8 +1,20 @@
 import { Injectable, signal, computed, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import { LoginResponse } from '../models/models';
+import { LoginResponse, Branch, AuthorizedBranch } from '../models';
 import { jwtDecode } from 'jwt-decode';
+
+export interface UserSession {
+  id: string;
+  username: string;
+  role: string;
+  fullName?: string;
+  email?: string;
+  permissions: string[];
+  branchId?: string;
+  authorizedBranches: AuthorizedBranch[];
+  expiresAt: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
@@ -10,10 +22,24 @@ export class AuthStateService {
   private readonly USER_KEY = 'st_user';
 
   // Signals for reactive state
-  private _currentUser = signal<{ username: string; role: string; fullName?: string; email?: string; permissions: string[] } | null>(null);
+  private _currentUser = signal<UserSession | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => !!this._currentUser());
   readonly permissions = computed(() => this._currentUser()?.permissions || []);
+
+  readonly isAdmin = computed(() => {
+    const role = this._currentUser()?.role.toLowerCase();
+    return role === 'admin' || role === 'systemadmin';
+  });
+
+  readonly isManager = computed(() => {
+    const role = this._currentUser()?.role.toLowerCase();
+    return role === 'manager' || role === 'branchmanager';
+  });
+
+  readonly isSeller = computed(() => {
+    return this._currentUser()?.role.toLowerCase() === 'seller';
+  });
 
   constructor(
     private router: Router,
@@ -39,12 +65,13 @@ export class AuthStateService {
       console.error('Error decoding token:', e);
     }
 
-    const user = {
+    const user: UserSession = {
+      id: response.id,
       username: response.username,
-      fullName: response.fullName,
-      email: response.email,
       role: response.role,
       permissions: permissions,
+      branchId: response.branchId,
+      authorizedBranches: response.authorizedBranches,
       expiresAt: response.expiresAt
     };
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));

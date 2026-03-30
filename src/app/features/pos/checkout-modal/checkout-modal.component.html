@@ -1,0 +1,71 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Completar Venta</h2>
+      <button class="btn btn-icon" (click)="close.emit()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="modal-body grid-layout">
+      <!-- Resumen -->
+      <div class="summary-section">
+        <h3>Resumen de Pago</h3>
+        <div class="summary-details">
+           <div class="detail-row">
+             <span>Subtotal</span>
+             <span>{{ subtotal | currency }}</span>
+           </div>
+           <div class="detail-row">
+             <span>ITBIS ({{ taxRate * 100 }}%)</span>
+             <span>{{ taxAmount | currency }}</span>
+           </div>
+           <div class="detail-row divider"></div>
+           <div class="detail-row total-row">
+             <span>Total a Pagar</span>
+             <span>{{ totalAmount | currency }}</span>
+           </div>
+        </div>
+
+        <div class="client-badge mt-4">
+           <div class="badge-label">Cliente</div>
+           <div class="badge-value" *ngIf="isExpress">{{ expressName || 'Consumidor Final' }}</div>
+           <div class="badge-value" *ngIf="!isExpress">{{ client?.name || 'No seleccionado' }}</div>
+        </div>
+      </div>
+
+      <!-- Metodo de Pago -->
+      <div class="payment-section">
+        <h3>Método de Pago</h3>
+        
+        <div class="payment-methods">
+          <label class="pm-option" [class.active]="paymentMethod === 'CASH'">
+             <input type="radio" name="pm" value="CASH" [(ngModel)]="paymentMethod">
+             <div class="pm-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+             </div>
+             <span>Efectivo</span>
+          </label>
+          
+          <label class="pm-option disabled" title="Próximamente">
+             <input type="radio" name="pm" value="CARD" disabled>
+             <div class="pm-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+             </div>
+             <span>Tarjeta</span>
+          </label>
+        </div>
+        
+        <!-- Payment details depending on method can go here -->
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="close.emit()">Cancelar (ESC)</button>
+      <button class="btn btn--primary btn-processing" (click)="processPayment()" [disabled]="isProcessing">
+        <span *ngIf="!isProcessing">Confirmar Venta</span>
+        <span *ngIf="isProcessing">Procesando...</span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,427 +1,49 @@
-import { Component, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { Component, computed, ViewChild, ElementRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthStateService } from '../../core/services/auth-state.service';
-import { AnimationService } from '../../core/services/animation.service';
+import { FlipAnimationService } from '../../core/services/flip-animation.service';
 import { ApiService } from '../../core/services/api.service';
+import { BranchStateService } from '../../core/services/branch-state.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 import { HasPermissionDirective } from '../../core/directives/has-permission.directive';
 import { NotificationBellComponent } from '../components/notification-bell/notification-bell.component';
+import { SidebarService } from '../../core/services/sidebar.service';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, HasPermissionDirective, NotificationBellComponent],
-  template: `
-
-<div class="app-layout">
-
-  <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
-  <aside class="sidebar">
-
-    <!-- Brand -->
-    <div class="sidebar__brand">
-      <div class="sidebar__logo">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="1"/>
-          <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.6"/>
-          <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.6"/>
-          <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.3"/>
-        </svg>
-      </div>
-      <div>
-        <div class="sidebar__name">StockTech</div>
-        <div class="sidebar__tagline">Gestión Empresarial</div>
-      </div>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="sidebar__nav">
-      <div class="sidebar__section-label">Principal</div>
-
-      <a routerLink="/dashboard" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/>
-          <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5"/>
-          <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5"/>
-          <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.3"/>
-        </svg>
-        <span>Dashboard</span>
-      </a>
-
-      <div class="sidebar__section-label" style="margin-top:14px">Operaciones</div>
-
-      <a routerLink="/clients" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="8" cy="6" r="3" fill="currentColor"/>
-          <path d="M2 17.5C2 14.46 4.686 12 8 12s6 2.46 6 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M15 8a3 3 0 010 0M15 8a2 2 0 112.5 1.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-        </svg>
-        <span>Clientes</span>
-      </a>
-
-      <a routerLink="/products" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 2L3 5.5v8L10 18l7-4.5v-8L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="currentColor" fill-opacity="0.15"/>
-          <path d="M10 2v8m0 0l7-3.5M10 10L3 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>Inventario</span>
-      </a>
-
-      <a routerLink="/suppliers" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4h12v12H4z" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>
-          <path d="M7 7h6M7 10h6M7 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>Suplidores</span>
-      </a>
-
-      <a routerLink="/branches" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 7l7-4 7 4v9l-7 4-7-4V7z" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>
-          <path d="M10 3v18m7-14l-7 4-7-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>Sucursales</span>
-      </a>
-
-      <a routerLink="/invoices" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.1"/>
-          <path d="M6.5 6.5h7M6.5 10h7M6.5 13.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>Facturación</span>
-      </a>
-
-      <a routerLink="/purchases" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 3h1.5l2.4 8.5h8.2l1.9-6H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="9" cy="16.5" r="1.2" fill="currentColor"/>
-          <circle cx="14" cy="16.5" r="1.2" fill="currentColor"/>
-        </svg>
-        <span>Compras</span>
-      </a>
-
-      <a routerLink="/reports" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 14l4-5 4 2.5 3-4.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="3" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-        </svg>
-        <span>Reportes</span>
-      </a>
-
-      <div *appHasPermission="'user:read'">
-        <div class="sidebar__section-label" style="margin-top:14px">Configuración</div>
-        <a routerLink="/users" routerLinkActive="active" class="sidebar__link">
-          <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 10a4 4 0 100-8 4 4 0 000 8zM2 18a8 8 0 1116 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>Usuarios</span>
-        </a>
-      </div>
-
-      <div class="sidebar__section-label" style="margin-top:14px">Cuenta</div>
-      <a routerLink="/profile" routerLinkActive="active" class="sidebar__link">
-        <svg class="sidebar__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 10a4 4 0 100-8 4 4 0 000 8z" fill="currentColor" fill-opacity="0.1"/>
-          <path d="M10 10a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>Mi Perfil</span>
-      </a>
-
-    </nav>
-
-    <!-- User Footer -->
-    <div class="sidebar__footer">
-      <a routerLink="/profile" class="sidebar__user" style="text-decoration:none; cursor:pointer">
-        <div class="sidebar__avatar">{{ userInitials() }}</div>
-        <div class="sidebar__user-info">
-          <div class="sidebar__username">{{ username() }}</div>
-          <div class="sidebar__role">{{ userRole() }}</div>
-        </div>
-      </a>
-      <button class="sidebar__logout" (click)="logout()" title="Cerrar sesión" id="logout-btn">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M11 5l3 3-3 3M14 8H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-
-  </aside>
-
-  <!-- ── Main Content ──────────────────────────────────────────────────── -->
-  <main class="main-content" #mainContent>
-    
-    <header class="main-header">
-      <div class="main-header__left">
-        <!-- Global Branch Selector (Only for Admin) -->
-        <div class="branch-selector" *ngIf="userRole() === 'Admin' || userRole() === 'SystemAdmin'">
-          <div class="branch-selector__icon"><i class="fi fi-rr-shop"></i></div>
-          <select class="branch-selector__dropdown" [(ngModel)]="selectedBranchId" (change)="onBranchChange()">
-            <option [ngValue]="null">Todas las Sucursales</option>
-            <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="main-header__right">
-        <app-notification-bell />
-      </div>
-    </header>
-
-    <div class="content-wrapper">
-      <router-outlet />
-    </div>
-  </main>
-
-</div>
-  `,
-  styles: [`
-    .sidebar {
-      position: fixed;
-      left: 0; top: 0; bottom: 0;
-      width: 240px;
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      z-index: 100;
-      // Subtle left brand stripe
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 2px;
-        background: linear-gradient(180deg, var(--accent) 0%, transparent 60%);
-        opacity: 0.6;
-      }
-
-      // Brand area
-      &__brand {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        padding: 20px 18px;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 4px;
-      }
-
-      &__logo {
-        width: 38px; height: 38px;
-        background: var(--accent);
-        color: var(--text-inverse);
-        border-radius: 9px;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 4px 16px var(--accent-glow);
-      }
-
-      &__name {
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-      }
-
-      &__tagline {
-        font-size: 0.68rem;
-        color: var(--text-muted);
-        margin-top: 1px;
-        letter-spacing: 0.02em;
-      }
-
-      // Navigation
-      &__nav {
-        flex: 1;
-        padding: 8px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        overflow-y: auto;
-      }
-
-      &__section-label {
-        font-size: 0.68rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-muted);
-        padding: 6px 10px 4px;
-      }
-
-      &__link {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 9px 10px;
-        border-radius: var(--radius-sm);
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--text-muted);
-        transition: all var(--transition);
-        position: relative;
-
-        &:hover {
-          background: var(--bg-elevated);
-          color: var(--text-secondary);
-        }
-
-        &.active {
-          background: var(--accent-dim);
-          color: var(--accent);
-          font-weight: 600;
-
-          // Left indicator
-          &::before {
-            content: '';
-            position: absolute;
-            left: -10px;
-            top: 25%; bottom: 25%;
-            width: 2px;
-            background: var(--accent);
-            border-radius: 0 2px 2px 0;
-          }
-        }
-      }
-
-      &__icon {
-        width: 17px; height: 17px;
-        flex-shrink: 0;
-      }
-
-      // Footer
-      &__footer {
-        padding: 14px;
-        border-top: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      &__user {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        min-width: 0;
-      }
-
-      &__user-info { min-width: 0; }
-
-      &__avatar {
-        width: 32px; height: 32px;
-        background: var(--bg-elevated);
-        border: 1px solid var(--border-hover);
-        border-radius: var(--radius-sm);
-        display: flex; align-items: center; justify-content: center;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        font-size: 0.8rem;
-        color: var(--accent);
-        flex-shrink: 0;
-      }
-
-      &__username {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      &__role {
-        font-size: 0.68rem;
-        color: var(--text-muted);
-        margin-top: 1px;
-      }
-
-      &__logout {
-        background: transparent;
-        border: 1px solid var(--border-hover);
-        border-radius: var(--radius-sm);
-        width: 32px; height: 32px;
-        cursor: pointer;
-        color: var(--text-muted);
-        display: flex; align-items: center; justify-content: center;
-        transition: all var(--transition);
-        flex-shrink: 0;
-
-        &:hover {
-          background: var(--danger-dim);
-          color: var(--danger);
-          border-color: rgba(244,63,94,0.25);
-        }
-      }
-    }
-
-    // Main Header
-    .main-header {
-      height: 64px;
-      padding: 0 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-
-      &__right {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-    }
-
-    .content-wrapper {
-      padding: 32px;
-    }
-
-    .main-content {
-      margin-left: 240px;
-      min-height: 100vh;
-      background: var(--bg-primary);
-    }
-  `]
+  templateUrl: './layout.component.html',
+  styleUrls: ['./layout.component.scss']
 })
 export class LayoutComponent implements OnInit {
+  private authState = inject(AuthStateService);
+  private router = inject(Router);
+  private anime = inject(FlipAnimationService);
+  private api = inject(ApiService);
+  public branchState = inject(BranchStateService);
+  public theme = inject(ThemeService);
+  public sidebar = inject(SidebarService);
+  public isSidebarCollapsed = false;
+
   @ViewChild('mainContent') mainContent!: ElementRef;
 
   username = computed(() => this.authState.currentUser()?.username ?? 'Usuario');
   userInitials = computed(() => this.username().charAt(0).toUpperCase());
-  userRole = computed(() => this.authState.currentUser()?.role ?? 'Usuario');
+  
+  isAdmin = this.authState.isAdmin;
+  isManager = this.authState.isManager;
+  isSeller = this.authState.isSeller;
 
-  branches: any[] = [];
-  selectedBranchId: string | null = null;
-
-  constructor(
-    private authState: AuthStateService,
-    private router: Router,
-    private anime: AnimationService,
-    private api: ApiService
-  ) {}
+  isAdminOrManager = computed(() => this.isAdmin() || this.isManager());
+  canSeeBranches = computed(() => this.isAdmin() || (this.isManager() && this.branchState.authorizedBranches().length > 1));
 
   ngOnInit(): void {
-    // Load branches if admin
-    if (this.userRole() === 'Admin' || this.userRole() === 'SystemAdmin') {
-      this.api.getBranches().subscribe(res => {
-        if (res) {
-          this.branches = res;
-        }
-      });
-      // Retrieve previously selected branch from session storage structure
-      const stored = sessionStorage.getItem('globalSelectedBranchId');
-      if (stored) {
-        this.selectedBranchId = stored;
-      }
-    }
-
+    // Page transitions on navigation
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
@@ -430,17 +52,6 @@ export class LayoutComponent implements OnInit {
       }
     });
   }
-
-  onBranchChange() {
-    if (this.selectedBranchId) {
-      sessionStorage.setItem('globalSelectedBranchId', this.selectedBranchId);
-    } else {
-      sessionStorage.removeItem('globalSelectedBranchId');
-    }
-    // Hard refresh or notify via a service to reload the current route data
-    window.location.reload(); 
-  }
   
   logout() { this.authState.logout(); }
 }
-

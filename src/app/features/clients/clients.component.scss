@@ -1,0 +1,12 @@
+.error-msg {
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+.form-control.is-invalid {
+  border-color: var(--danger) !important;
+  background-color: var(--danger-alpha) !important;
+}

@@ -1,0 +1,14 @@
+<div class="confirm-overlay" *ngIf="confirmService.state().show" (click)="confirmService.handle(false)">
+  <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <div class="confirm-header">
+      <h3>{{ confirmService.state().title }}</h3>
+    </div>
+    <div class="confirm-body">
+      <p>{{ confirmService.state().message }}</p>
+    </div>
+    <div class="confirm-footer">
+      <button class="btn btn--secondary" (click)="confirmService.handle(false)">Cancelar</button>
+      <button class="btn btn--danger" (click)="confirmService.handle(true)">Confirmar</button>
+    </div>
+  </div>
+</div>

@@ -1,126 +1,131 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { ReportSummary } from '../../core/models/models';
+import { BranchStateService } from '../../core/services/branch-state.service';
+import { SidebarService } from '../../core/services/sidebar.service';
+import { ReportSummary } from '../../core/models';
+import { FilterPanelComponent, FilterOption } from '../../shared/components/filter-panel/filter-panel.component';
+import { FilterChipsComponent, ActiveFilter } from '../../shared/components/filter-chips/filter-chips.component';
+import { AuthStateService } from '../../core/services/auth-state.service';
+import { CategoryService } from '../../core/services/category.service';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-<div>
-  <div class="page-header">
-    <div>
-      <h1>Reportes</h1>
-      <p>Consulta y exporta reportes por período</p>
-    </div>
-  </div>
-
-  <!-- Filter -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card__header"><h2>Filtro por Período</h2></div>
-    <div class="form-row" style="align-items:flex-end;gap:16px">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Desde</label>
-        <input type="date" [(ngModel)]="from" />
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Hasta</label>
-        <input type="date" [(ngModel)]="to" />
-      </div>
-      <button class="btn btn--primary" (click)="loadReport()" [disabled]="loading">
-        {{ loading ? 'Consultando...' : '🔍 Consultar' }}
-      </button>
-      <button class="btn btn--success" (click)="exportExcel()" [disabled]="!summary || exporting">
-        {{ exporting ? 'Exportando...' : '📥 Exportar Excel' }}
-      </button>
-    </div>
-    <div *ngIf="error" class="alert alert--error" style="margin-top:12px">{{ error }}</div>
-  </div>
-
-  <!-- Summary Cards -->
-  <div class="metric-grid" *ngIf="summary">
-    <div class="metric-card">
-      <div class="metric-label">Total Ventas</div>
-      <div class="metric-value text-success">RD$ {{ summary.totalSales | number:'1.2-2' }}</div>
-      <div class="metric-icon">💰</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Total Compras</div>
-      <div class="metric-value text-warning">RD$ {{ summary.totalPurchases | number:'1.2-2' }}</div>
-      <div class="metric-icon">🛒</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Ganancia Neta</div>
-      <div class="metric-value" [class.text-success]="summary.netProfit >= 0" [class.text-danger]="summary.netProfit < 0">
-        RD$ {{ summary.netProfit | number:'1.2-2' }}
-      </div>
-      <div class="metric-icon">📈</div>
-    </div>
-  </div>
-
-  <!-- Sales Table -->
-  <div class="card" *ngIf="summary && summary.sales.length > 0" style="margin-bottom:24px">
-    <div class="card__header"><h2>Ventas ({{ summary.sales.length }})</h2></div>
-    <table class="data-table">
-      <thead><tr><th># Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let s of summary.sales">
-          <td class="font-mono text-accent">{{ s.invoiceNumber }}</td>
-          <td>{{ s.clientName }}</td>
-          <td>{{ s.invoiceDate | date:'dd/MM/yyyy' }}</td>
-          <td class="fw-bold text-success">RD$ {{ s.total | number:'1.2-2' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Purchases Table -->
-  <div class="card" *ngIf="summary && summary.purchases.length > 0">
-    <div class="card__header"><h2>Compras ({{ summary.purchases.length }})</h2></div>
-    <table class="data-table">
-      <thead><tr><th># Compra</th><th>Proveedor</th><th>Fecha</th><th>Total</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let p of summary.purchases">
-          <td class="font-mono text-accent">{{ p.purchaseNumber }}</td>
-          <td>{{ p.supplierName }}</td>
-          <td>{{ p.purchaseDate | date:'dd/MM/yyyy' }}</td>
-          <td class="fw-bold text-warning">RD$ {{ p.total | number:'1.2-2' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div *ngIf="summary && summary.sales.length === 0 && summary.purchases.length === 0" class="card">
-    <p class="text-muted" style="padding:40px;text-align:center">No hay datos para el período seleccionado.</p>
-  </div>
-</div>
-  `
+  imports: [CommonModule, FormsModule, FilterPanelComponent, FilterChipsComponent],
+  templateUrl: './reports.component.html',
+  styleUrls: ['./reports.component.scss']
 })
-export class ReportsComponent implements OnInit {
+export class ReportsComponent implements OnInit, OnDestroy {
+  private api = inject(ApiService);
+  private branchState = inject(BranchStateService);
+  private sidebar = inject(SidebarService);
+  private authState = inject(AuthStateService);
+  private categoryService = inject(CategoryService);
+
+  @ViewChild('reportActions', { static: true }) reportActions!: TemplateRef<any>;
+
   summary: ReportSummary | null = null;
   loading = false;
-  exporting = false;
   error = '';
+  exporting = false;
+  showFilterPanel = false;
+  filters: any = {};
+  categories: any[] = [];
+  branches: any[] = [];
+  filterConfig: FilterOption[] = [];
+  activeChips: ActiveFilter[] = [];
+  isAdmin = this.authState.isAdmin();
 
-  from = '';
-  to = '';
-
-  constructor(private api: ApiService) {}
-
-  ngOnInit(): void {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    this.from = firstDay.toISOString().split('T')[0];
-    this.to = today.toISOString().split('T')[0];
-    this.loadReport();
+  constructor() {
+    toObservable(this.branchState.selectedBranchId).subscribe(() => this.loadData());
   }
 
-  loadReport(): void {
-    if (!this.from || !this.to) { this.error = 'Selecciona ambas fechas.'; return; }
-    this.loading = true; this.error = '';
-    this.api.getReportSummary(this.from + 'T00:00:00', this.to + 'T23:59:59').subscribe({
+  ngOnInit(): void {
+    forkJoin({
+      categories: this.categoryService.getAll(),
+      branches: this.isAdmin ? this.api.getBranches() : of([])
+    }).subscribe((res: any) => {
+      this.categories = res.categories;
+      this.branches = res.branches;
+      this.initFilterConfig();
+    });
+    this.loadData();
+  }
+
+  ngOnDestroy(): void {
+    this.sidebar.clear();
+  }
+
+  initFilterConfig() {
+    this.filterConfig = [
+      {
+        id: 'categoryId',
+        label: 'Categoría',
+        type: 'select',
+        options: this.categories.map(c => ({ value: c.id, label: c.name }))
+      },
+      { id: 'startDate', label: 'Desde', type: 'date' },
+      { id: 'endDate', label: 'Hasta', type: 'date' }
+    ];
+
+    if (this.isAdmin) {
+      this.filterConfig.unshift({
+        id: 'branchId',
+        label: 'Sucursal',
+        type: 'select',
+        options: this.branches.map(b => ({ value: b.id, label: b.name })),
+        value: this.branchState.selectedBranchId()
+      });
+    }
+  }
+
+  applyFilters(newFilters: any) {
+    this.filters = { ...newFilters };
+    this.updateActiveChips();
+    this.loadData();
+  }
+
+  updateActiveChips() {
+    this.activeChips = [];
+    Object.keys(this.filters).forEach(key => {
+      const config = this.filterConfig.find(f => f.id === key);
+      const val = this.filters[key];
+      if (config && val) {
+        let displayValue = val.toString();
+        if (config.type === 'select') {
+          displayValue = config.options?.find(o => o.value === val)?.label || val;
+        }
+        this.activeChips.push({ id: key, label: config.label, displayValue: displayValue });
+      }
+    });
+  }
+
+  removeFilter(id: string) {
+    delete this.filters[id];
+    const config = this.filterConfig.find(f => f.id === id);
+    if (config) config.value = undefined;
+    this.updateActiveChips();
+    this.loadData();
+  }
+
+  clearFilters() {
+    this.filters = {};
+    this.filterConfig.forEach(f => f.value = undefined);
+    this.activeChips = [];
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading = true;
+    const branchId = this.filters.branchId ?? this.branchState.selectedBranchId();
+    const from = this.filters.startDate ?? new Date().toISOString().split('T')[0];
+    const to = this.filters.endDate ?? new Date().toISOString().split('T')[0];
+    
+    this.api.getReportSummary(from + 'T00:00:00', to + 'T23:59:59', branchId ?? undefined).subscribe({
       next: (s) => { this.summary = s; this.loading = false; },
       error: (e) => { this.error = e.error?.message ?? 'Error al cargar reporte.'; this.loading = false; }
     });
@@ -128,17 +133,26 @@ export class ReportsComponent implements OnInit {
 
   exportExcel(): void {
     this.exporting = true;
-    this.api.exportReportExcel(this.from + 'T00:00:00', this.to + 'T23:59:59').subscribe({
-      next: (blob) => {
+    const branchId = this.filters.branchId ?? this.branchState.selectedBranchId();
+    const from = (this.filters.startDate ?? new Date().toISOString().split('T')[0]) + 'T00:00:00';
+    const to = (this.filters.endDate ?? new Date().toISOString().split('T')[0]) + 'T23:59:59';
+
+    this.api.exportReportExcel(from, to, branchId ?? undefined).subscribe({
+      next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `StockTech_Reporte_${this.from}_${this.to}.xlsx`;
+        a.download = `StockTech_Reporte_${from.split('T')[0]}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
         this.exporting = false;
       },
       error: () => { this.exporting = false; }
     });
+  }
+
+  exportPdf(): void {
+    // Currently reuse excel if pdf is not implemented or add separate call
+    this.exportExcel();
   }
 }

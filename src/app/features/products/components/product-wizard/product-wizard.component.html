@@ -1,0 +1,135 @@
+<div class="wizard-overlay" [class.active]="isActive">
+   <!-- Background Stage -->
+   <div class="wizard-stage">
+      <app-product-preview-card></app-product-preview-card>
+   </div>
+
+   <!-- Side Panel (Floating) -->
+   <div class="wizard-panel" #panel>
+      <div class="wizard-header">
+         <div class="flex-1">
+            <h3 class="text-xl font-black text-primary">{{ product ? 'Editar Producto' : 'Crear Producto' }}</h3>
+            <p class="text-[10px] uppercase font-black tracking-[0.2em] text-muted">Ajustando Parámetros • Paso {{ currentStep() }} de 3</p>
+         </div>
+         <button class="btn btn--ghost btn--sm" (click)="close()">✕</button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="wizard-stepper px-8 py-4 flex gap-2">
+         <div *ngFor="let s of [1,2,3]" 
+              class="flex-1 h-1 rounded-full transition-all duration-500"
+              [class.bg-accent]="currentStep() >= s"
+              [class.bg-[var(--bg-secondary)]]="currentStep() < s">
+         </div>
+      </div>
+
+      <div class="wizard-body p-8" #body>
+         <form [formGroup]="form">
+            
+            <!-- STEP 1: IDENTITY -->
+            <div *ngIf="currentStep() === 1" class="step-animation">
+               <div class="form-group mb-6">
+                  <label class="wizard-label">Nombre del Activo</label>
+                  <input type="text" formControlName="name" placeholder="Ej: iPhone 15 Pro Max" class="wizard-input" (input)="syncState()" />
+               </div>
+
+               <div class="form-group mb-6">
+                  <label class="wizard-label flex-between">
+                     Categoría
+                     <button class="text-accent hover:underline" (click)="categoryFlow.open()">+ Nuevo</button>
+                  </label>
+                  <select formControlName="categoryId" class="wizard-input" (change)="syncState()">
+                     <option [value]="null">Seleccionar...</option>
+                     <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+                  </select>
+               </div>
+
+               <div class="form-group mb-6">
+                  <label class="wizard-label">Descripción Técnica</label>
+                  <textarea formControlName="description" rows="4" class="wizard-input" placeholder="Detalles, specs..." (input)="syncState()"></textarea>
+               </div>
+            </div>
+
+            <!-- STEP 2: PRICING -->
+            <div *ngIf="currentStep() === 2" class="step-animation">
+               <div class="grid grid-cols-2 gap-4 mb-6">
+                  <div class="form-group">
+                     <label class="wizard-label">Costo Bruto</label>
+                     <input type="number" formControlName="cost" class="wizard-input" (input)="syncState()" />
+                  </div>
+                  <div class="form-group">
+                     <label class="wizard-label">PVP Sugerido</label>
+                     <input type="number" formControlName="price" class="wizard-input" (input)="syncState()" />
+                  </div>
+               </div>
+
+               <div class="grid grid-cols-2 gap-4 mb-6">
+                  <div class="form-group">
+                     <label class="wizard-label">Stock de Apertura</label>
+                     <input type="number" formControlName="initialStock" class="wizard-input" [readonly]="!!product" (input)="syncState()" />
+                  </div>
+                  <div class="form-group">
+                     <label class="wizard-label">Mínimo de Alerta</label>
+                     <input type="number" formControlName="minStock" class="wizard-input" (input)="syncState()" />
+                  </div>
+               </div>
+
+               <div class="profit-calculator p-6 rounded-[2rem] bg-accent/5 border border-accent/10">
+                  <p class="text-[10px] font-black uppercase text-accent mb-2">Proyección de Utilidad</p>
+                  <div class="flex items-end gap-2">
+                     <span class="text-3xl font-black text-primary">{{ state.margin() | number:'1.1-1' }}%</span>
+                     <span class="text-xs font-bold text-muted mb-1 pb-1">Margen Estimado</span>
+                  </div>
+               </div>
+            </div>
+
+            <!-- STEP 3: LOGISTICS -->
+            <div *ngIf="currentStep() === 3" class="step-animation">
+               <div class="form-group mb-6" *ngIf="isGlobalAdmin || branches.length > 1">
+                  <label class="wizard-label">Sucursal Destino</label>
+                  <select formControlName="branchId" class="wizard-input" (change)="onBranchChange()">
+                     <option [value]="null">Seleccionar sucursal...</option>
+                     <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+                  </select>
+               </div>
+
+               <div class="form-group mb-6">
+                  <label class="wizard-label flex-between">
+                     Suplidor
+                     <button class="text-accent hover:underline" (click)="supplierFlow.open()">+ Nuevo</button>
+                  </label>
+                  <select formControlName="supplierId" class="wizard-input" (change)="syncState()">
+                     <option [value]="null">No definido</option>
+                     <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
+                  </select>
+               </div>
+
+               <div class="form-group mb-6">
+                  <label class="wizard-label">Imagen de Producto</label>
+                  <div class="img-dropzone" (click)="imgInput.click()">
+                     <input #imgInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden />
+                     @if (state.hasImage()) {
+                        <img [src]="state.productDraft().image" class="w-full h-full object-cover rounded-2xl" />
+                     } @else {
+                        <span class="text-2xl opacity-20">📸</span>
+                        <p class="text-[10px] font-black text-muted mt-2 uppercase tracking-widest">Cargar Media</p>
+                     }
+                  </div>
+               </div>
+            </div>
+         </form>
+      </div>
+
+      <div class="wizard-footer p-8 flex gap-3 bg-[var(--bg-primary)] mt-auto">
+         <button class="btn btn--secondary flex-1" (click)="prevStep()" [disabled]="currentStep() === 1">Atrás</button>
+         <button *ngIf="currentStep() < 3" class="btn btn--primary flex-1" (click)="nextStep()" [disabled]="!isStepValid()">Continuar</button>
+         <button *ngIf="currentStep() === 3" class="btn btn--accent flex-1" (click)="submit()" [disabled]="form.invalid || loading">
+            {{ loading ? 'Sincronizando...' : 'Finalizar' }}
+         </button>
+      </div>
+   </div>
+
+   <!-- Sub-Flows -->
+   <app-category-create-flow #categoryFlow (onCreated)="onCategoryCreated($event)"></app-category-create-flow>
+   <app-supplier-create-flow #supplierFlow [branchId]="form.get('branchId')?.value" (onCreated)="onSupplierCreated($event)"></app-supplier-create-flow>
+</div>

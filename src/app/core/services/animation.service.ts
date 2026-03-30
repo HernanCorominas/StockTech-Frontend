@@ -1,6 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { gsap } from 'gsap';
+import { Flip } from 'gsap/Flip';
 import { ThemeService } from './theme.service';
+
+gsap.registerPlugin(Flip);
 
 @Injectable({ providedIn: 'root' })
 export class AnimationService {
@@ -16,6 +19,60 @@ export class AnimationService {
 
   private get factor() {
     return this.theme.settings().animationIntensity;
+  }
+
+  private sharedElements = new Map<string, HTMLElement>();
+
+  registerSharedElement(id: string, el: HTMLElement) {
+    this.sharedElements.set(id, el);
+  }
+
+  unregisterSharedElement(id: string) {
+    this.sharedElements.delete(id);
+  }
+
+  /**
+   * Captures the state of registered shared elements or a specific target.
+   * Includes key properties for smooth morphing: borderRadius, boxShadow, etc.
+   */
+  captureState(targets?: HTMLElement | HTMLElement[] | string) {
+    if (this.factor <= 0) return null;
+    const elementsToCapture = targets || Array.from(this.sharedElements.values());
+    return Flip.getState(elementsToCapture, { 
+      props: 'borderRadius,boxShadow,backgroundColor,cssText',
+      simple: true // Optimization for high-end SaaS feel
+    });
+  }
+
+  /**
+   * Animates from the captured state to the current layout.
+   * Specifically optimized for "All Buttons" to have Shared Element feel.
+   */
+  flip(state: any, targets?: HTMLElement | HTMLElement[] | string, options: any = {}) {
+    if (!state || this.factor <= 0) return;
+    
+    const elementsToAnimate = targets || Array.from(this.sharedElements.values());
+    
+    // Core Flip Animation
+    Flip.from(state, {
+      targets: elementsToAnimate,
+      duration: (options.duration || 0.6) * this.factor,
+      ease: options.ease || this.organicSpring,
+      absolute: true, // Prevent layout jumps during expansion
+      fade: true,
+      scale: true, // Smooth resizing
+      toggleClass: options.toggleClass,
+      onStart: (elems) => {
+        // Shared-element geometry morphing
+        gsap.to(elems, { 
+          borderRadius: options.borderRadius || '16px', // Standard card-radius
+          duration: (options.duration || 0.6) * this.factor,
+          ease: options.ease || this.organicSpring
+        });
+        if (options.onStart) options.onStart(elems);
+      },
+      onComplete: options.onComplete
+    });
   }
 
   /**

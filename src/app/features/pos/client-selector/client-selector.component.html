@@ -1,0 +1,33 @@
+<div class="client-selector-container">
+  <div class="selector-header">
+    <span class="label">Tipo de Venta</span>
+    <div class="toggle-group">
+      <button class="toggle-btn" [class.active]="isExpress" (click)="toggleExpress.emit()">Express</button>
+      <button class="toggle-btn" [class.active]="!isExpress" (click)="toggleExpress.emit()">Con Cliente</button>
+    </div>
+  </div>
+
+  <div class="selector-body" *ngIf="isExpress">
+    <div class="form-group grid-2">
+      <div>
+        <label>Nombre (Opcional)</label>
+        <input type="text" class="form-control" [ngModel]="tempExpressName" (ngModelChange)="onNameChange($event)" placeholder="Consumidor Final" />
+      </div>
+      <div>
+        <label>Documento / RNC (Opcional)</label>
+        <input type="text" class="form-control" [ngModel]="tempExpressDocument" (ngModelChange)="onDocumentChange($event)" placeholder="000-0000000-0" />
+      </div>
+    </div>
+  </div>
+
+  <div class="selector-body" *ngIf="!isExpress">
+    <div class="form-group">
+       <label>Seleccionar Cliente</label>
+       <!-- Minimalist select/search -->
+       <select class="form-control" [(ngModel)]="selectedClientId" (change)="onClientSelect()">
+         <option value="">-- Buscar o Seleccionar --</option>
+         <option *ngFor="let c of clients" [value]="c.id">{{ c.name }} {{ c.document ? '(' + c.document + ')' : '' }}</option>
+       </select>
+    </div>
+  </div>
+</div>

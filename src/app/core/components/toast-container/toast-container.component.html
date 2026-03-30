@@ -1,0 +1,11 @@
+<div class="toast-container">
+  <div *ngFor="let toast of toastService.toasts()" 
+       [class]="'toast-item ' + toast.type"
+       (click)="toastService.remove(toast.id)">
+    <div class="toast-content">
+      <span class="icon">{{ getIcon(toast.type) }}</span>
+      <span class="message">{{ toast.message }}</span>
+    </div>
+    <div class="toast-progress" [style.animationDuration]="toast.duration + 'ms'"></div>
+  </div>
+</div>

@@ -1,0 +1,61 @@
+<div class="filter-panel" [class.active]="isVisible">
+  <div class="filter-panel__header">
+    <h3 class="font-black">Filtros Avanzados</h3>
+    <button class="btn btn--ghost btn--sm" (click)="close()">✕</button>
+  </div>
+
+  <div class="filter-panel__body">
+    <div *ngFor="let filter of filters" class="filter-group mb-6">
+      <label class="filter-label">{{ filter.label }}</label>
+      
+      <!-- Select -->
+      <select *ngIf="filter.type === 'select'" 
+              [(ngModel)]="filter.value" 
+              class="form-control">
+        <option [ngValue]="undefined">Todos</option>
+        <option *ngFor="let opt of filter.options" [ngValue]="opt.value">{{ opt.label }}</option>
+      </select>
+
+      <!-- Checkbox List -->
+      <div *ngIf="filter.type === 'checkbox'" class="checkbox-list">
+        <label *ngFor="let opt of filter.options" class="checkbox-item flex items-center gap-2 mb-2 cursor-pointer">
+          <input type="checkbox" 
+                 [checked]="isArray(filter.value) && filter.value.includes(opt.value)"
+                 (change)="toggleCheckbox(filter, opt.value)" />
+          <span class="text-sm font-medium">{{ opt.label }}</span>
+        </label>
+      </div>
+
+      <!-- Range Slider -->
+      <div *ngIf="filter.type === 'range'" class="range-container">
+        <div class="flex justify-between text-[10px] font-bold text-muted mb-2">
+          <span>{{ filter.min | number }}</span>
+          <span>{{ filter.value || filter.max | number }}</span>
+        </div>
+        <input type="range" 
+               [min]="filter.min" 
+               [max]="filter.max" 
+               [(ngModel)]="filter.value" 
+               class="range-slider w-full" />
+      </div>
+
+      <!-- Date -->
+      <input *ngIf="filter.type === 'date'" 
+             type="date" 
+             [(ngModel)]="filter.value" 
+             class="form-control" />
+
+      <!-- Text/SKU -->
+      <input *ngIf="filter.type === 'text'" 
+             type="text" 
+             [(ngModel)]="filter.value" 
+             placeholder="Escribe para filtrar..."
+             class="form-control" />
+    </div>
+  </div>
+
+  <div class="filter-panel__footer flex gap-3">
+    <button class="btn btn--secondary flex-1" (click)="clear()">Limpiar</button>
+    <button class="btn btn--primary flex-1" (click)="apply()">Aplicar</button>
+  </div>
+</div>

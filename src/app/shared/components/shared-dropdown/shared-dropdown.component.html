@@ -1,0 +1,45 @@
+<div class="dropdown-container" #container [class.disabled]="disabled">
+  <label *ngIf="label" class="dropdown-label">{{ label }}</label>
+  
+  <div class="dropdown-trigger" 
+       [class.active]="isOpen()" 
+       (click)="!disabled && toggle($event)"
+       #trigger>
+    <div class="trigger-content">
+      <span *ngIf="!selectedItem()" class="placeholder">{{ placeholder }}</span>
+      <div *ngIf="selectedItem()" class="selected-value">
+        <span class="main-label">{{ selectedItem()?.label }}</span>
+        <span *ngIf="selectedItem()?.sublabel" class="sub-label">{{ selectedItem()?.sublabel }}</span>
+      </div>
+    </div>
+    <span class="chevron" [class.rotated]="isOpen()">▾</span>
+  </div>
+
+  <div class="dropdown-panel" #panel [class.visible]="isOpen()">
+    <div class="search-box" (click)="$event.stopPropagation()">
+      <input type="text" 
+             [ngModel]="searchTerm()" 
+             (ngModelChange)="searchTerm.set($event)"
+             placeholder="Buscar..." 
+             class="search-input"
+             #searchInput />
+    </div>
+    
+    <div class="options-list">
+      <div *ngIf="filteredItems().length === 0" class="no-results">
+        No se encontraron resultados
+      </div>
+      
+      <div *ngFor="let item of filteredItems()" 
+           class="option-item" 
+           [class.selected]="item.id === value()"
+           (click)="select(item)">
+        <div class="option-content">
+          <span class="option-label">{{ item.label }}</span>
+          <span *ngIf="item.sublabel" class="option-sublabel">{{ item.sublabel }}</span>
+        </div>
+        <span *ngIf="item.id === value()" class="check-icon">✓</span>
+      </div>
+    </div>
+  </div>
+</div>

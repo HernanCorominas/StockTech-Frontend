@@ -1,0 +1,163 @@
+<div class="overlay" [class.active]="showForm || showSupplierForm" (click)="onOverlayClick()"></div>
+<div class="page-header" [class.v-hidden]="showForm">
+  <div>
+    <h1 class="font-black">Compras</h1>
+    <p class="text-muted small">Órdenes de abastecimiento y recepciones • {{ purchases.length }} órdenes registradas</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div class="card" *ngIf="!loading" style="padding: 0; overflow: hidden">
+   <table class="data-table">
+      <thead>
+        <tr>
+          <th>Suplidor</th>
+          <th>Sucursal</th>
+          <th>Fecha</th>
+          <th>Total Bruto</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of purchases" [appFlipTrigger]="'purchase-row-' + p.id">
+          <td>
+            <div class="fw-bold text-primary">{{ p.supplierName }}</div>
+            <div class="text-muted smaller">Orden de Abastecimiento</div>
+          </td>
+          <td><span class="badge badge--secondary">{{ p.branchName || 'Sede Central' }}</span></td>
+          <td class="small">{{ p.purchaseDate | date:'dd MMM, yyyy' }}</td>
+          <td class="fw-bold text-success text-right">RD$ {{ p.total | number:'1.2-2' }}</td>
+          <td><button class="btn btn--ghost btn--sm">Ver</button></td>
+        </tr>
+        <tr *ngIf="purchases.length === 0">
+          <td colspan="5" style="text-align: center; padding: 60px;">
+            <div class="text-muted italic">No hay historial de compras disponible</div>
+          </td>
+        </tr>
+      </tbody>
+   </table>
+</div>
+
+<!-- Inline Form Panel (iOS Morph) -->
+<div class="inline-form-panel" [class.active]="showForm">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'btn-new-purchase'">
+    <div>
+      <h3>Nueva Compra</h3>
+      <p class="text-muted small">Ingreso de mercancía al inventario</p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="closeForm()" [disabled]="saving">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+     <div *ngIf="error" class="alert alert--danger">{{ error }}</div>
+     
+     <div style="display: flex; gap: 16px">
+       <div class="form-group flex-1">
+         <app-shared-dropdown
+           label="Sucursal Destino *"
+           placeholder="Donde recibirá..."
+           [items]="branchItems"
+           [(value)]="branchId"
+           (valueChange)="onBranchChange($event)">
+         </app-shared-dropdown>
+       </div>
+       <div class="form-group flex-1">
+         <div style="display:flex; align-items:flex-end; gap:8px">
+           <div style="flex:1">
+             <app-shared-dropdown
+               label="Suplidor *"
+               placeholder="Proveedor de origen..."
+               [items]="supplierItems"
+               [(value)]="supplierId"
+               [disabled]="!branchId">
+             </app-shared-dropdown>
+           </div>
+           <button class="btn btn--secondary" style="height: 44px; width: 44px; padding:0; border-radius: 14px" 
+             (click)="openSupplierForm()" [disabled]="!branchId" title="Nuevo Suplidor" [attr.data-flip-id]="'new-supplier-action'">
+             <span>+</span>
+           </button>
+         </div>
+         <p *ngIf="!branchId" class="text-[10px] text-muted font-bold uppercase tracking-wider mt-2 italic">Seleccione sucursal primero</p>
+       </div>
+     </div>
+
+     <div style="margin-top: 24px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px">
+           <h4 class="text-primary" style="margin:0">Mercancía</h4>
+           <button class="btn btn--secondary btn--sm" (click)="addLine()">+ Agregar Línea</button>
+        </div>
+        
+        <div class="space-y-3">
+           <div *ngFor="let line of items; let i = index" class="flex flex-col p-4 bg-secondary rounded-2xl animate-fade-in gap-3">
+             <div class="flex gap-3">
+               <div style="flex:3">
+                 <select *ngIf="!line['isNew']" [(ngModel)]="line.productId" (ngModelChange)="updateTotal()" class="form-control">
+                    <option value="">Seleccionar Producto...</option>
+                    <option *ngFor="let p of products" [value]="p.id">{{ p.name }} (Stock: {{p.stock}})</option>
+                 </select>
+                 <input *ngIf="line['isNew']" type="text" [(ngModel)]="line.productName" placeholder="Nombre del nuevo producto" class="form-control" />
+               </div>
+               <button class="btn btn--ghost" style="padding: 0 12px; border-radius: 12px; background: var(--bg-card)" title="Alternar Nuevo/Existente" (click)="toggleNewProduct(line)">
+                  <span class="text-primary font-bold">{{ line['isNew'] ? 'Existente' : 'Nuevo' }}</span>
+               </button>
+               <button class="btn btn--ghost btn--sm text-danger" (click)="removeLine(i)">✕</button>
+             </div>
+             
+             <div class="flex gap-3 items-center">
+               <div class="flex-1">
+                 <label class="text-[9px] uppercase font-bold text-muted ml-2">Cant</label>
+                 <input type="number" [(ngModel)]="line.quantity" (ngModelChange)="updateTotal()" placeholder="Cant" min="1" class="form-control" />
+               </div>
+               <div class="flex-1">
+                 <label class="text-[9px] uppercase font-bold text-muted ml-2">Costo Unit</label>
+                 <input type="number" [(ngModel)]="line.unitCost" (ngModelChange)="updateTotal()" placeholder="Costo" min="0" class="form-control" />
+               </div>
+               <div class="flex-1">
+                 <label class="text-[9px] uppercase font-bold text-muted ml-2">Impuesto</label>
+                 <select [(ngModel)]="line.taxRate" (ngModelChange)="updateTotal()" class="form-control">
+                    <option [value]="0">Exento</option>
+                    <option [value]="16">16%</option>
+                    <option [value]="18">18%</option>
+                 </select>
+               </div>
+               <div style="width:130px; text-align:right" class="font-mono text-primary font-bold pt-4">RD$ {{ (line.quantity * line.unitCost * (1 + line.taxRate/100)) | number:'1.2-2' }}</div>
+             </div>
+           </div>
+        </div>
+     </div>
+
+      <div *ngIf="items.length > 0" class="mt-8 p-6 rounded-3xl flex flex-col items-end gap-2 border border-bright" style="background: var(--bg-secondary)">
+        <div class="flex justify-between w-full max-w-[240px]">
+          <span class="text-muted small font-bold uppercase tracking-widest">Subtotal</span>
+          <span class="font-bold text-primary">RD$ {{ subTotalAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between w-full max-w-[240px]">
+          <span class="text-muted small font-bold uppercase tracking-widest">Impuestos</span>
+          <span class="font-bold text-primary">RD$ {{ taxTotalAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between w-full max-w-[240px] mt-2 pt-2 border-t border-bright">
+          <span class="text-primary font-bold uppercase tracking-widest">Total Orden</span>
+          <span class="text-2xl font-black text-success">RD$ {{ totalAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+     <div class="form-group mt-6">
+        <label>Observaciones de la Compra</label>
+        <textarea [(ngModel)]="notes" rows="2" placeholder="Ej: Pago contra entrega, requiere revisión..." class="form-control"></textarea>
+     </div>
+  </div>
+  <div class="inline-form-panel__footer">
+    <button class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+    <button class="btn btn--primary" (click)="save()" [disabled]="saving || !isValid()">
+      {{ saving ? 'Almacenando...' : 'Confirmar Compra' }}
+    </button>
+  </div>
+</div>
+
+<app-supplier-form
+  [isActive]="showSupplierForm"
+  [flipId]="'new-supplier-action'"
+  [initialBranchId]="branchId"
+  (onSave)="onSupplierCreated($event)"
+  (onCancel)="closeSupplierForm()">
+</app-supplier-form>

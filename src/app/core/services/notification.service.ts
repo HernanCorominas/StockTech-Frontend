@@ -1,4 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../../environments/environment';
 import { AuthStateService } from './auth-state.service';
@@ -7,8 +8,10 @@ import { toObservable } from '@angular/core/rxjs-interop';
 export interface AppNotification {
   id: string;
   message: string;
+  type?: string;
   date: Date;
   isRead: boolean;
+  createdAt?: string; 
 }
 
 @Injectable({
@@ -17,14 +20,15 @@ export interface AppNotification {
 export class NotificationService {
   private hubConnection?: signalR.HubConnection;
   private authState = inject(AuthStateService);
+  private http = inject(HttpClient);
   
   notifications = signal<AppNotification[]>([]);
   unreadCount = signal(0);
 
   constructor() {
-    // Start connection when user is logged in
     toObservable(this.authState.isAuthenticated).subscribe((isAuth: boolean) => {
       if (isAuth) {
+        this.loadHistory();
         this.startConnection();
       } else {
         this.stopConnection();
@@ -32,10 +36,22 @@ export class NotificationService {
     });
   }
 
+  private loadHistory() {
+    this.http.get<AppNotification[]>(`${environment.apiUrl}/notifications`)
+      .subscribe(data => {
+        const mapped = data.map(n => ({
+          ...n,
+          date: n.createdAt ? new Date(n.createdAt) : new Date()
+        }));
+        this.notifications.set(mapped);
+        this.unreadCount.set(mapped.filter(n => !n.isRead).length);
+      });
+  }
+
   private startConnection() {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl.replace('/api/v1', '')}/notificationHub`, {
-        accessTokenFactory: () => localStorage.getItem('token') || ''
+      .withUrl(`${environment.apiUrl.split('/api')[0]}/notificationHub`, {
+        accessTokenFactory: () => this.authState.getToken() || ''
       })
       .withAutomaticReconnect()
       .build();
@@ -52,6 +68,8 @@ export class NotificationService {
 
   private stopConnection() {
     this.hubConnection?.stop();
+    this.notifications.set([]);
+    this.unreadCount.set(0);
   }
 
   private addNotification(message: string) {
@@ -64,14 +82,14 @@ export class NotificationService {
 
     this.notifications.update(prev => [newNotification, ...prev]);
     this.unreadCount.update(count => count + 1);
-    
-    // Auto-remove after 10 seconds or keep in history?
-    // For now, keep in history.
   }
 
   markAsRead() {
-    this.notifications.update(prev => prev.map(n => ({ ...n, isRead: true })));
-    this.unreadCount.set(0);
+    this.http.post(`${environment.apiUrl}/notifications/mark-all-read`, {})
+      .subscribe(() => {
+        this.notifications.update(prev => prev.map(n => ({ ...n, isRead: true })));
+        this.unreadCount.set(0);
+      });
   }
 
   clear() {

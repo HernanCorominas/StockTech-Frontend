@@ -1,0 +1,26 @@
+.stepper-bar {
+  padding: 0 4px;
+}
+
+.form-scroll-area {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 12px;
+}
+
+.form-scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.form-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.inline-form-panel--wide {
+  max-width: 1000px !important;
+}

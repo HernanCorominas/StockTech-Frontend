@@ -1,0 +1,102 @@
+<div class="page-header">
+  <div>
+    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Análisis y Reportes</p>
+    <p class="text-muted small">Visualización periódica del rendimiento</p>
+  </div>
+  <div style="display: flex; gap: 8px; align-items: center">
+    <button class="btn btn--secondary btn--sm" (click)="showFilterPanel = true">
+      <span class="mr-2">🔍</span> Filtros
+    </button>
+    <button class="btn btn--secondary btn--sm" (click)="exportPdf()">PDF</button>
+    <button class="btn btn--primary btn--sm" (click)="exportExcel()">Excel</button>
+  </div>
+</div>
+
+<app-filter-chips [chips]="activeChips" (remove)="removeFilter($event)" (clearAll)="clearFilters()"></app-filter-chips>
+
+<div *ngIf="error" class="alert alert--danger mb-6 animate-fade-in">
+  <div class="flex items-center gap-3">
+    <span>⚠️</span>
+    <p class="m-0">{{ error }}</p>
+  </div>
+</div>
+
+<div *ngIf="loading && !summary" class="flex flex-col items-center justify-center p-20">
+  <div class="spinner mb-4"></div>
+  <p class="text-slate-400 font-medium">Generando informe detallado...</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="metric-grid mb-8" *ngIf="summary">
+  <div class="metric-card card border-0 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)">
+    <div class="metric-label text-success uppercase tracking-widest font-bold">Total Ventas</div>
+    <div class="metric-value text-success">RD$ {{ summary.totalSales | number:'1.2-2' }}</div>
+    <div class="metric-icon bg-success-dim">💰</div>
+  </div>
+  <div class="metric-card card border-0 shadow-sm" style="background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)">
+    <div class="metric-label text-warning uppercase tracking-widest font-bold">Total Compras</div>
+    <div class="metric-value text-warning">RD$ {{ summary.totalPurchases | number:'1.2-2' }}</div>
+    <div class="metric-icon bg-warning-dim">🛒</div>
+  </div>
+  <div class="metric-card card border-0 shadow-sm" [style.background]="summary.netProfit >= 0 ? 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)'">
+    <div class="metric-label uppercase tracking-widest font-bold" [class.text-primary]="summary.netProfit >= 0" [class.text-danger]="summary.netProfit < 0">Ganancia Neta</div>
+    <div class="metric-value" [class.text-primary]="summary.netProfit >= 0" [class.text-danger]="summary.netProfit < 0">
+      RD$ {{ summary.netProfit | number:'1.2-2' }}
+    </div>
+    <div class="metric-icon" [class.bg-primary-alpha]="summary.netProfit >= 0" [class.bg-danger-dim]="summary.netProfit < 0">📈</div>
+  </div>
+</div>
+
+<!-- Tables Container -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8" *ngIf="summary && (summary.sales.length > 0 || summary.purchases.length > 0)">
+  <app-filter-panel
+    [isVisible]="showFilterPanel"
+    [filters]="filterConfig"
+    (onApply)="applyFilters($event)"
+    (onClear)="clearFilters()"
+    (onClose)="showFilterPanel = false">
+  </app-filter-panel>
+  <!-- Sales Table -->
+  <div class="card overflow-hidden" *ngIf="summary.sales.length > 0">
+    <div class="card__header bg-slate-50/50">
+      <h2 class="text-slate-700">Ventas Recientes ({{ summary.sales.length }})</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Factura</th><th>Cliente</th><th class="text-right">Total</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let s of summary.sales" class="hover-row">
+            <td><span class="badge badge--primary font-mono">{{ s.invoiceNumber }}</span></td>
+            <td class="font-medium">{{ s.clientName }}</td>
+            <td class="text-success font-black text-right">RD$ {{ s.total | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Purchases Table -->
+  <div class="card overflow-hidden" *ngIf="summary.purchases.length > 0">
+    <div class="card__header bg-slate-50/50">
+      <h2 class="text-slate-700">Compras Recientes ({{ summary.purchases.length }})</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Compra</th><th>Proveedor</th><th class="text-right">Total</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let p of summary.purchases" class="hover-row">
+            <td><span class="badge badge--warning font-mono">{{ p.purchaseNumber }}</span></td>
+            <td class="font-medium">{{ p.supplierName }}</td>
+            <td class="text-warning font-black text-right">RD$ {{ p.total | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="summary && summary.sales.length === 0 && summary.purchases.length === 0" class="empty-state card p-20">
+  <div class="text-6xl mb-4">📂</div>
+  <p class="text-xl font-bold">Sin movimientos</p>
+  <p class="text-muted small">No hay transacciones registradas para el rango seleccionado.</p>
+</div>

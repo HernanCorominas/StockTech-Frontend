@@ -1,0 +1,77 @@
+<div class="page-header">
+  <div>
+    <h1 class="font-black">Kardex de Inventario</h1>
+    <p class="text-muted small">Historial detallado de movimientos y traslados</p>
+  </div>
+</div>
+
+<div class="filters-bar card mb-6 p-4 flex flex-wrap gap-4 items-end">
+  <div class="form-group mb-0">
+    <label class="text-[10px] uppercase font-black tracking-widest text-muted">Producto</label>
+    <select [(ngModel)]="filters.productId" (ngModelChange)="load()" class="form-control form-control--sm">
+      <option value="">Todos los productos</option>
+      <option *ngFor="let p of products" [value]="p.id">{{ p.name }}</option>
+    </select>
+  </div>
+  <div class="form-group mb-0">
+    <label class="text-[10px] uppercase font-black tracking-widest text-muted">Tipo de Movimiento</label>
+    <select [(ngModel)]="filters.type" (ngModelChange)="load()" class="form-control form-control--sm">
+      <option value="">Cualquier tipo</option>
+      <option [value]="TransactionType.Purchase">Compras / Entradas</option>
+      <option [value]="TransactionType.Sale">Ventas / Salidas</option>
+      <option [value]="TransactionType.Adjustment">Ajustes / Correcciones</option>
+      <option [value]="TransactionType.Transfer">Traslados</option>
+    </select>
+  </div>
+  <div style="flex:1"></div>
+  <button class="btn btn--secondary btn--sm" (click)="resetFilters()">Limpiar Filtros</button>
+</div>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div class="card overflow-hidden" *ngIf="!loading">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Fecha y Hora</th>
+        <th>Producto / Variante</th>
+        <th>Tipo</th>
+        <th class="text-right">Cantidad</th>
+        <th class="text-right">Stock Previo</th>
+        <th class="text-right">Stock Nuevo</th>
+        <th>Ref / Comprobante</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let m of movements" class="hover:bg-[var(--bg-primary)] transition-colors">
+        <td class="text-xs font-bold text-muted">{{ m.transactionDate | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>
+          <div class="font-black text-primary">{{ getProductName(m.productId) }}</div>
+          <div class="text-[10px] text-muted font-bold uppercase">{{ m.variantId || 'Sin Variante' }}</div>
+        </td>
+        <td>
+          <span class="badge" 
+            [class.badge--success]="m.type === TransactionType.Purchase"
+            [class.badge--primary]="m.type === TransactionType.Sale"
+            [class.badge--warning]="m.type === TransactionType.Adjustment"
+            [class.badge--secondary]="m.type === TransactionType.Transfer">
+            {{ getTypeName(m.type) }}
+          </span>
+        </td>
+        <td class="text-right font-black" [class.text-success]="m.quantity > 0" [class.text-danger]="m.quantity < 0">
+          {{ m.quantity > 0 ? '+' : '' }}{{ m.quantity }}
+        </td>
+        <td class="text-right text-muted font-bold">{{ m.previousStock }}</td>
+        <td class="text-right font-black text-primary">{{ m.newStock }}</td>
+        <td>
+          <span class="badge badge--secondary font-mono tracking-tighter">{{ m.referenceNumber || m.invoiceId || m.purchaseId || '—' }}</span>
+        </td>
+      </tr>
+      <tr *ngIf="movements.length === 0">
+        <td colspan="7" class="text-center py-20 text-muted font-bold">
+          No se han encontrado movimientos con los filtros seleccionados.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

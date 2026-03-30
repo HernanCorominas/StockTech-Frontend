@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Product, CreateProduct, UpdateProduct, PagedResult, InventoryTransaction } from '../../../core/models/models';
+import { Product, CreateProduct, UpdateProduct, PagedResult, InventoryTransaction } from '../../../core/models';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -11,10 +11,22 @@ export class ProductService {
 
   constructor(private http: HttpClient) {}
 
-  getProducts(page: number = 1, pageSize: number = 10, search?: string): Observable<PagedResult<Product>> {
-    let url = `${this.api}?page=${page}&pageSize=${pageSize}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    return this.http.get<PagedResult<Product>>(url);
+  getProducts(page: number, pageSize: number, search?: string, filters: any = {}): Observable<PagedResult<Product>> {
+    let params = `?page=${page}&pageSize=${pageSize}`;
+    if (search) params += `&search=${encodeURIComponent(search)}`;
+    
+    Object.keys(filters).forEach(key => {
+      const val = filters[key];
+      if (val !== undefined && val !== null && val !== '') {
+        if (Array.isArray(val)) {
+          val.forEach(v => params += `&${key}=${encodeURIComponent(v)}`);
+        } else {
+          params += `&${key}=${encodeURIComponent(val)}`;
+        }
+      }
+    });
+
+    return this.http.get<PagedResult<Product>>(`${this.api}${params}`);
   }
 
   getProduct(id: string): Observable<Product> {
@@ -35,6 +47,17 @@ export class ProductService {
 
   getKardex(productId: string): Observable<InventoryTransaction[]> {
     return this.http.get<InventoryTransaction[]>(`${this.invApi}/kardex/${productId}`);
+  }
+
+  getTransactions(params: any): Observable<InventoryTransaction[]> {
+    let url = `${this.invApi}/transactions?`;
+    if (params.branchId) url += `branchId=${params.branchId}&`;
+    if (params.productId) url += `productId=${params.productId}&`;
+    if (params.startDate) url += `startDate=${params.startDate}&`;
+    if (params.endDate) url += `endDate=${params.endDate}&`;
+    if (params.type) url += `type=${params.type}&`;
+    if (params.userId) url += `userId=${params.userId}&`;
+    return this.http.get<InventoryTransaction[]>(url);
   }
 
   exportExcel(): Observable<Blob> {

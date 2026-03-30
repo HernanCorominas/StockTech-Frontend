@@ -1,0 +1,145 @@
+<div class="page-header">
+  <div>
+    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Módulo de Inventario</p>
+    <p class="text-muted small">Mostrando {{ totalCount }} activos en sistema</p>
+  </div>
+  <div style="display: flex; gap: 8px; align-items: center">
+    <div class="search-input">
+      <input type="text" placeholder="Buscar por SKU o nombre..." [(ngModel)]="search" (keyup.enter)="load(1)" />
+    </div>
+    <button class="btn btn--secondary btn--sm" (click)="showFilterPanel = true">
+      <span class="mr-2">🔍</span> Filtros
+    </button>
+    <button *ngIf="!isSeller" class="btn btn--secondary btn--sm" (click)="openBulkEdit()" [appFlipTrigger]="'btn-bulk-product'">Ajuste</button>
+  </div>
+</div>
+
+<app-filter-chips [chips]="activeChips" (remove)="removeFilter($event)" (clearAll)="clearFilters()"></app-filter-chips>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div class="card overflow-hidden" *ngIf="!loading">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th width="60"></th>
+        <th>Producto / Categoría</th>
+        <th width="120">SKU</th>
+        <th width="150">Valuación</th>
+        <th width="140">Existencias</th>
+        <th width="160">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let p of products" #row [appFlipTrigger]="'product-row-' + p.id" 
+          class="hover:bg-[var(--bg-secondary)] transition-all cursor-pointer group" (click)="openDetail(p)">
+        <td>
+          <div class="w-9 h-9 rounded-xl overflow-hidden bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-subtle)] group-hover:scale-105 transition-transform duration-300">
+            <img *ngIf="p.image" [src]="p.image" class="w-full h-full object-cover" alt="" />
+            <span *ngIf="!p.image" class="text-lg opacity-40">📦</span>
+          </div>
+        </td>
+        <td class="py-2">
+          <div class="font-black text-primary group-hover:text-accent transition-colors leading-tight">{{ p.name }}</div>
+          <div class="text-[9px] text-muted font-bold uppercase tracking-widest">{{ p.categoryName || 'General' }}</div>
+        </td>
+        <td>
+          <span class="font-mono text-muted text-[10px] font-black tracking-tighter bg-[var(--bg-secondary)] py-1 px-2 rounded-lg border border-[var(--border-subtle)]">
+            {{ p.sku || 'PENDIENTE' }}
+          </span>
+        </td>
+        <td>
+          <div class="text-primary font-black text-sm">RD$ {{ p.price | number:'1.2-2' }}</div>
+          <div class="text-[9px] text-muted font-bold uppercase tracking-wide">Costo: {{ p.cost | number:'1.2-2' }}</div>
+        </td>
+        <td>
+          <div class="flex items-center gap-2">
+             <span class="badge" 
+               [class.badge--danger]="p.stock <= 5" 
+               [class.badge--warning]="p.stock > 5 && p.stock <= 15" 
+               [class.badge--success]="p.stock > 15">
+               {{ p.stock }} uni.
+             </span>
+             <span class="text-[10px] font-black uppercase" 
+               [class.text-danger]="p.stock <= 5"
+               [class.text-warning]="p.stock > 5 && p.stock <= 15"
+               [class.text-success]="p.stock > 15">
+               {{ p.stock <= 5 ? 'Crítico' : p.stock <= 15 ? 'Bajo' : 'Óptimo' }}
+             </span>
+          </div>
+        </td>
+        <td>
+          <div class="flex gap-2">
+             <button *ngIf="isAdmin || isManager" class="btn btn--secondary btn--sm" (click)="onEdit.emit(p); $event.stopPropagation()" [appFlipTrigger]="'product-action'">Editar</button>
+             <button class="btn btn--accent btn--sm" (click)="openKardex(p); $event.stopPropagation()" [appFlipTrigger]="'btn-kardex-' + p.id">Historial</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div class="pagination flex-between p-4 bg-[var(--bg-primary)] border-t border-[var(--border-subtle)]">
+    <span class="text-muted text-xs font-bold uppercase tracking-widest">Mostrando {{ products.length }} de {{ totalCount }} registros</span>
+    <div class="flex gap-2">
+      <button class="btn btn--secondary btn--sm" [disabled]="page === 1" (click)="load(page - 1)">Anterior</button>
+      <button class="btn btn--secondary btn--sm" [disabled]="products.length < pageSize" (click)="load(page + 1)">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Kardex Panel (Arctic) -->
+<div class="overlay" [class.active]="showKardexModal" (click)="closeKardex()"></div>
+<div class="inline-form-panel" [class.active]="showKardexModal" *ngIf="showKardexModal" [appFlipTrigger]="'btn-kardex-' + selectedProductId">
+  <div class="inline-form-panel__header">
+    <div>
+      <h3 class="font-black text-primary">Libro de Kardex</h3>
+      <p class="text-muted small">Cronología de existencias: <span class="font-bold text-primary">{{ selectedProductName }}</span></p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="closeKardex()">✕</button>
+  </div>
+  <div class="inline-form-panel__body bg-[var(--bg-primary)] p-0">
+    <app-stock-history [productId]="selectedProductId"></app-stock-history>
+  </div>
+</div>
+
+<!-- Bulk Edit Panel -->
+<div class="inline-form-panel" *ngIf="showBulkEditModal" [appFlipTrigger]="'btn-bulk-product'">
+  <div class="inline-form-panel__header">
+    <h3>Ajuste Masivo de Stock</h3>
+    <button class="btn btn--ghost btn--sm" (click)="closeBulkEdit()">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+    <table class="data-table">
+        <thead><tr><th>Producto</th><th>Stock Actual</th><th>Nuevo Stock</th></tr></thead>
+        <tbody>
+            <tr *ngFor="let p of bulkEditProducts">
+                <td class="fw-semibold">{{ p.name }}</td>
+                <td class="text-muted">{{ p.originalStock }}</td>
+                <td><input type="number" class="form-control" style="width: 80px" [(ngModel)]="p.newStock" /></td>
+            </tr>
+        </tbody>
+    </table>
+  </div>
+  <div class="inline-form-panel__footer">
+    <button class="btn btn--secondary" (click)="closeBulkEdit()">Cancelar</button>
+    <button class="btn btn--primary" (click)="saveBulkEdit()" [disabled]="savingBulk">
+        {{ savingBulk ? 'Guardando...' : 'Guardar Cambios' }}
+    </button>
+  </div>
+</div>
+<!-- Dynamic Filter Panel -->
+<app-filter-panel
+  [isVisible]="showFilterPanel"
+  [filters]="filterConfig"
+  (onApply)="applyFilters($event)"
+  (onClear)="clearFilters()"
+  (onClose)="showFilterPanel = false">
+</app-filter-panel>
+
+<!-- Product Detail Modal -->
+<app-product-detail-modal 
+  *ngIf="showDetailModal && selectedProduct" 
+  [product]="selectedProduct"
+  (onClose)="closeDetail()"
+  (onEdit)="editFromDetail()">
+</app-product-detail-modal>

@@ -1,0 +1,162 @@
+<div class="overlay" [class.active]="showForm" (click)="closeForm()"></div>
+<div class="page-header" [class.v-hidden]="showForm">
+  <div>
+    <h1 class="font-black">Sucursales</h1>
+    <p class="text-muted small">Puntos de venta y centros de distribución • {{ branches.length }} registradas</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="flex justify-center p-20">
+  <div class="spinner"></div>
+</div>
+
+<!-- Cards Grid Layout -->
+<div class="cards-grid" *ngIf="!loading" [class.v-hidden]="showForm">
+   <div *ngFor="let b of branches" 
+        class="branch-card" 
+        #card
+        [appFlipTrigger]="'branch-row-' + b.id">
+     <div class="branch-card__header">
+       <div class="branch-icon" [class.inactive]="!b.isActive">
+          <span class="text-xl">🏢</span>
+       </div>
+       <div class="status-indicator" [class.active]="b.isActive"></div>
+     </div>
+     
+     <div class="branch-card__body">
+       <h3 class="branch-name">{{ b.name }}</h3>
+       <div class="branch-info">
+         <span class="icon">📍</span>
+         <span class="text">{{ b.address || 'Sin dirección' }}</span>
+       </div>
+       <div class="branch-info">
+         <span class="icon">👤</span>
+         <span class="text">{{ b.managerName || 'Sin encargado' }}</span>
+       </div>
+       <div class="branch-info">
+         <span class="icon">📞</span>
+         <span class="text">{{ b.phone || 'Sin teléfono' }}</span>
+       </div>
+     </div>
+
+     <div class="branch-card__footer">
+       <div class="badge" [class.badge--success]="b.isActive" [class.badge--danger]="!b.isActive">
+         {{ b.isActive ? 'Activa' : 'Inactiva' }}
+       </div>
+       <div class="actions" *ngIf="isAdmin()">
+         <button class="action-btn edit" 
+                 (click)="editBranch(b); $event.stopPropagation()" 
+                 [appFlipTrigger]="'branch-action'" 
+                 title="Editar">
+           ✏️
+         </button>
+         <button class="action-btn delete" 
+                 (click)="deleteBranch(b.id)" 
+                 title="Eliminar">
+           🗑️
+         </button>
+       </div>
+     </div>
+   </div>
+</div>
+
+<!-- Inline Form Panel (Premium Expansion) -->
+<div class="inline-form-panel" [class.active]="showForm">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'branch-action'">
+    <h3>{{ selectedId ? 'Editar Sucursal' : 'Nueva Sucursal' }}</h3>
+    <button class="btn btn--ghost btn--sm" (click)="closeForm()" [disabled]="saving">✕</button>
+  </div>
+  
+  <div class="inline-form-panel__body">
+     <!-- Main Branch Form -->
+     <div *ngIf="!showUserForm" class="animate-in">
+        <div class="form-group">
+          <label>Nombre de la Sucursal *</label>
+          <input type="text" [(ngModel)]="form.name" class="form-control" [class.is-invalid]="submitted && !form.name" placeholder="Ej. Sucursal Duarte" />
+          <div *ngIf="submitted && !form.name" class="error-msg">El nombre es obligatorio</div>
+        </div>
+        <div class="form-group">
+          <label>Ubicación / Dirección *</label>
+          <input type="text" [(ngModel)]="form.address" class="form-control" [class.is-invalid]="submitted && !form.address" placeholder="Av. Principal #123" />
+          <div *ngIf="submitted && !form.address" class="error-msg">La dirección es obligatoria</div>
+        </div>
+        
+        <div class="form-group">
+          <div class="flex items-center justify-between mb-2">
+            <label class="mb-0">Encargado (Branch Admin)</label>
+            <button class="btn btn--secondary btn--xs" (click)="showUserForm = true" title="Crear un nuevo usuario con rol de Administrador de Sucursal">
+              <span class="mr-1">+</span> Nuevo Encargado
+            </button>
+          </div>
+          <app-shared-dropdown
+            placeholder="Seleccionar encargado"
+            [items]="userItems"
+            [(value)]="form.managerId">
+          </app-shared-dropdown>
+          <p *ngIf="userItems.length === 0" class="text-xs text-warning mt-2 font-medium">
+            ⚠️ No hay usuarios disponibles para asignar. Crea uno nuevo arriba.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono de Contacto</label>
+          <input type="text" [(ngModel)]="form.phone" class="form-control" placeholder="809-000-0000" />
+        </div>
+
+        <div class="form-group flex items-center gap-3 p-4 rounded-2xl mt-4 border border-bright" style="background: var(--bg-primary-alpha)" *ngIf="selectedId">
+          <div class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="form.isActive" id="branchIsActive" />
+            <label for="branchIsActive" class="slider"></label>
+          </div>
+          <label for="branchIsActive" class="cursor-pointer font-bold text-primary">Estado de Operación</label>
+        </div>
+        <p class="text-xs text-muted mt-2 px-1" *ngIf="selectedId">Las sucursales inactivas no pueden realizar nuevas transacciones.</p>
+     </div>
+
+     <!-- User Creation Form -->
+     <div *ngIf="showUserForm" class="animate-in user-form">
+        <div class="flex items-center gap-3 mb-6 p-4 rounded-2xl" style="background: var(--bg-primary-alpha); border: 1px solid var(--border-bright)">
+          <span class="text-2xl">👤</span>
+          <div>
+            <h4 class="font-bold text-primary m-0">Crear Nuevo Encargado</h4>
+            <p class="text-xs text-muted m-0">Este usuario tendrá acceso total a esta sucursal.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre Completo *</label>
+          <input type="text" [(ngModel)]="userForm.fullName" class="form-control" [class.is-invalid]="userSubmitted && !userForm.fullName" placeholder="Ej. Juan Pérez" />
+          <div *ngIf="userSubmitted && !userForm.fullName" class="error-msg">Requerido</div>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" [(ngModel)]="userForm.email" class="form-control" [class.is-invalid]="userSubmitted && !userForm.email" placeholder="juan@ejemplo.com" />
+          <div *ngIf="userSubmitted && !userForm.email" class="error-msg">Requerido</div>
+        </div>
+        <div class="form-group">
+          <label>Nombre de Usuario *</label>
+          <input type="text" [(ngModel)]="userForm.username" class="form-control" [class.is-invalid]="userSubmitted && !userForm.username" placeholder="juanperez" />
+          <div *ngIf="userSubmitted && !userForm.username" class="error-msg">Requerido</div>
+        </div>
+        <div class="form-group">
+          <label>Contraseña *</label>
+          <input type="password" [(ngModel)]="userForm.password" class="form-control" [class.is-invalid]="userSubmitted && !userForm.password" placeholder="••••••••" />
+          <div *ngIf="userSubmitted && !userForm.password" class="error-msg">Requerida</div>
+        </div>
+
+        <div class="flex gap-2 mt-6">
+          <button class="btn btn--secondary flex-1" (click)="showUserForm = false">Volver</button>
+          <button class="btn btn--primary flex-1" (click)="createUser()" [disabled]="creatingUser || (userSubmitted && (!userForm.fullName || !userForm.email || !userForm.username || !userForm.password))">
+            {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
+          </button>
+        </div>
+     </div>
+  </div>
+
+  <div class="inline-form-panel__footer" *ngIf="!showUserForm">
+    <button class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+    <button class="btn btn--primary" (click)="save()" [disabled]="saving || (submitted && (!form.name || !form.address))">
+      {{ saving ? 'Guardando...' : (selectedId ? 'Actualizar Cambios' : 'Confirmar Registro') }}
+    </button>
+  </div>
+</div>

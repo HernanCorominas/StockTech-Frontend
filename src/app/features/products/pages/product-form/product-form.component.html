@@ -1,0 +1,149 @@
+<div class="inline-form-panel inline-form-panel--wide" [class.active]="isActive">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'product-action'">
+    <div>
+      <h3 class="font-black text-primary">{{ product ? 'Identidad de Producto' : 'Registro de Activo' }}</h3>
+      <p class="text-muted small">Wizard de Configuración • Paso {{ currentStep() }} de 3</p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="close()" [disabled]="loading">✕</button>
+  </div>
+  
+  <div class="inline-form-panel__body">
+    <!-- Stepper Indicator -->
+    <div class="stepper-bar flex gap-2 mb-8">
+      <div *ngFor="let s of [1,2,3]" 
+           class="flex-1 h-1.5 rounded-full transition-all duration-500"
+           [class.bg-accent]="currentStep() >= s"
+           [class.bg-[var(--bg-secondary)]]="currentStep() < s"
+           [class.opacity-40]="currentStep() < s">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <!-- Step Content -->
+      <div class="form-scroll-area">
+        <form [formGroup]="productForm">
+          
+          <!-- STEP 1: IDENTITY -->
+          <div *ngIf="currentStep() === 1" class="animate-fade-in">
+            <div class="form-group">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Denominación del Producto *</label>
+              <input type="text" formControlName="name" placeholder="Ej: Laptop Dell XPS 15" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Categoría Operativa *</label>
+              <select formControlName="categoryId" class="form-control">
+                <option [value]="null">Seleccionar Categoría...</option>
+                <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Anotaciones Técnicas</label>
+              <textarea formControlName="description" rows="5" class="form-control" placeholder="Especificaciones, ubicación en almacén..."></textarea>
+            </div>
+          </div>
+
+          <!-- STEP 2: ECONOMICS & STOCK -->
+          <div *ngIf="currentStep() === 2" class="animate-fade-in">
+            <div class="grid grid-cols-2 gap-5">
+              <div class="form-group">
+                <label class="text-[10px] uppercase font-black tracking-widest text-muted">Precio de Venta (PVP) *</label>
+                <div style="position: relative">
+                  <span class="font-black text-xs text-muted" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%)">RD$</span>
+                  <input type="number" formControlName="price" class="form-control pl-12" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="text-[10px] uppercase font-black tracking-widest text-muted">Costo Adquisición *</label>
+                <div style="position: relative">
+                  <span class="font-black text-xs text-muted" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%)">RD$</span>
+                  <input type="number" formControlName="cost" class="form-control pl-12" />
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5 mt-4">
+              <div class="form-group">
+                <label class="text-[10px] uppercase font-black tracking-widest text-muted">Stock Inicial de Apertura</label>
+                <input type="number" formControlName="initialStock" class="form-control" [readonly]="isEdit" />
+                <p class="text-[10px] text-muted mt-2" *ngIf="isEdit">El stock base no puede alterarse desde aquí.</p>
+              </div>
+              <div class="form-group">
+                <label class="text-[10px] uppercase font-black tracking-widest text-muted">Umbral Mínimo (Alerta)</label>
+                <input type="number" formControlName="minStock" class="form-control" />
+              </div>
+            </div>
+            
+            <div class="mt-8 p-6 rounded-[2rem] bg-[var(--primary-alpha)] border border-[var(--accent-dim)]">
+               <div class="flex items-center gap-3 mb-2">
+                  <span class="text-xl">📊</span>
+                  <h4 class="font-black text-xs uppercase tracking-widest text-primary">Inteligencia de Rentabilidad</h4>
+               </div>
+               <p class="text-xs text-muted font-medium">Margen Proyectado: <span class="font-black text-primary">{{ currentMargin() | number:'1.2-2' }}%</span></p>
+               <div class="w-full bg-[var(--bg-secondary)] h-2 rounded-full mt-3 overflow-hidden">
+                  <div class="h-full bg-accent transition-all duration-700" [style.width.%]="currentMargin() > 100 ? 100 : currentMargin()"></div>
+               </div>
+               <p class="text-[9px] font-bold text-amber-500 mt-2 uppercase" *ngIf="currentMargin() < targetMargin">⚠️ Por debajo del objetivo ({{ targetMargin }}%)</p>
+            </div>
+          </div>
+
+          <!-- STEP 3: LOGISTICS -->
+          <div *ngIf="currentStep() === 3" class="animate-fade-in">
+            <div class="form-group" *ngIf="isGlobalAdmin">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Sucursal Destino *</label>
+              <select formControlName="branchId" class="form-control">
+                <option [value]="null">Seleccionar Sucursal...</option>
+                <option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Suministro de Origen</label>
+              <select formControlName="supplierId" class="form-control">
+                <option [value]="null">Seleccionar Suplidor...</option>
+                <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="text-[10px] uppercase font-black tracking-widest text-muted">Identidad Visual (Imagen)</label>
+              <div class="image-upload-zone p-8 rounded-[2rem] border-2 border-dashed border-[var(--border-bright)] cursor-pointer hover:bg-[var(--primary-alpha)] transition-all flex flex-col items-center" (click)="imgInput.click()">
+                 <input #imgInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden />
+                 <svg class="w-10 h-10 text-muted opacity-30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                 <p class="text-xs font-black text-muted uppercase tracking-widest">Subir Imagen</p>
+                 <p class="text-[10px] text-muted opacity-60">Formatos: JPG, PNG • Max 2MB</p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Live Preview Sidebar -->
+      <div class="hidden lg:block sticky top-0">
+        <app-product-live-preview
+          [name]="productForm.get('name')?.value"
+          [categoryName]="getSelectedCategoryName()"
+          [price]="productForm.get('price')?.value"
+          [margin]="currentMargin()"
+          [targetMargin]="targetMargin"
+          [step]="currentStep()"
+          [imageUrl]="imageUrl()">
+        </app-product-live-preview>
+      </div>
+    </div>
+  </div>
+
+  <div class="inline-form-panel__footer bg-[var(--bg-primary)] border-t border-[var(--border-subtle)]">
+    <div class="flex gap-3 w-full justify-between">
+      <button type="button" class="btn btn--secondary" (click)="prevStep()" [disabled]="currentStep() === 1">Anterior</button>
+      <div class="flex gap-3">
+        <button type="button" class="btn btn--ghost text-muted font-bold uppercase tracking-widest text-[10px]" (click)="close()">Descartar</button>
+        <button *ngIf="currentStep() < 3" type="button" class="btn btn--primary" (click)="nextStep()" [disabled]="!isStepValid()">Continuar</button>
+        <button *ngIf="currentStep() === 3" type="submit" class="btn btn--accent" (click)="submit()" [disabled]="productForm.invalid || loading">
+          {{ loading ? 'Sincronizando...' : (isEdit ? 'Guardar Cambios' : 'Finalizar Registro') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

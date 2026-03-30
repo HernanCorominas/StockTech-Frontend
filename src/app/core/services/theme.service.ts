@@ -5,6 +5,7 @@ export interface ThemeSettings {
   primaryColor: string;
   gradientIntensity: number;
   animationIntensity: number;
+  isDarkMode: boolean;
 }
 
 export interface ColorPreset {
@@ -17,17 +18,19 @@ export interface ColorPreset {
 export class ThemeService {
   private readonly THEME_KEY = 'st_theme_settings';
   
-  // Default: premium blue and white feel
+  // Default: Azure Onyx (iOS Premium)
   settings = signal<ThemeSettings>({
-    primaryColor: '#3b82f6', // Premium Blue
-    gradientIntensity: 0.15,
-    animationIntensity: 1.0
+    primaryColor: '#007AFF', // iOS Azure
+    gradientIntensity: 0.12,
+    animationIntensity: 1.0,
+    isDarkMode: true
   });
 
   // Computed signals
   primaryColor = computed(() => this.settings().primaryColor);
   gradientIntensity = computed(() => this.settings().gradientIntensity);
   animationIntensity = computed(() => this.settings().animationIntensity);
+  isDarkMode = computed(() => this.settings().isDarkMode);
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.loadSettings();
@@ -56,8 +59,25 @@ export class ThemeService {
     this.updateSettings({ animationIntensity: value });
   }
 
+  setDarkMode(isDark: boolean) {
+    this.updateSettings({ isDarkMode: isDark });
+  }
+
+  toggleDarkMode() {
+    this.updateSettings({ isDarkMode: !this.settings().isDarkMode });
+  }
+
   private applyTheme(s: ThemeSettings) {
     if (!isPlatformBrowser(this.platformId)) return;
+    const body = document.body;
+    
+    // Toggle class for CSS variables scope
+    if (s.isDarkMode) {
+      body.classList.remove('light-theme');
+    } else {
+      body.classList.add('light-theme');
+    }
+
     const root = document.documentElement;
     
     // Core color

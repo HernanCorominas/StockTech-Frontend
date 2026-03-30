@@ -1,18 +1,23 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ThemeService, ColorPreset } from '../../../core/services/theme.service';
-import { AnimationService } from '../../../core/services/animation.service';
+import { FlipAnimationService } from '../../../core/services/flip-animation.service';
 import gsap from 'gsap';
+
+import { FlipTriggerDirective } from '../../../shared/directives/flip-trigger.directive';
 
 @Component({
   selector: 'app-appearance-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FlipTriggerDirective],
   templateUrl: './appearance-dialog.component.html',
   styleUrls: ['./appearance-dialog.component.scss']
 })
 export class AppearanceDialogComponent implements OnInit {
+  public themeService = inject(ThemeService);
+  private anime = inject(FlipAnimationService);
+
   isOpen = signal(false);
 
   colors = [
@@ -24,32 +29,33 @@ export class AppearanceDialogComponent implements OnInit {
     { name: 'Amber', value: '#F59E0B', isDark: false }
   ];
 
-  constructor(
-    public themeService: ThemeService,
-    private animationService: AnimationService
-  ) {}
-
   ngOnInit(): void {}
 
   toggleDialog() {
-    this.isOpen.set(!this.isOpen());
-    if (this.isOpen()) {
-      gsap.fromTo('.appearance-backdrop', { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power3.out' });
-      gsap.fromTo('.appearance-modal', 
-        { y: '100%', scale: 0.9, opacity: 0 }, 
-        { y: '0%', scale: 1, opacity: 1, duration: 0.6, ease: 'expo.out' }
-      );
+    const state = this.anime.getState('[data-flip-id="appearance-dialog"]');
+    const isOpening = !this.isOpen();
+    
+    if (isOpening) {
+      this.isOpen.set(true);
+      requestAnimationFrame(() => {
+        this.anime.from(state, { fromRadius: '50%', borderRadius: '32px' });
+        const modal = document.querySelector('.appearance-modal') as HTMLElement;
+        
+        if (modal) {
+          this.anime.animateModal(modal);
+          setTimeout(() => this.anime.animateContent(modal, '.appearance-modal__body > *'), 100);
+        }
+      });
     } else {
-      gsap.to('.appearance-backdrop', { opacity: 0, duration: 0.3, ease: 'power3.in' });
-      gsap.to('.appearance-modal', 
-        { y: '100%', scale: 0.9, opacity: 0, duration: 0.4, ease: 'expo.in' }
-      );
+      const modal = document.querySelector('.appearance-modal') as HTMLElement;
+      this.anime.animateModalOut(modal)?.eventCallback('onComplete', () => {
+        this.isOpen.set(false);
+        this.anime.from(state, { fromRadius: '50%', borderRadius: '32px' });
+      });
     }
   }
 
-  setColor(preset: ColorPreset) {
-    this.themeService.setPrimaryColor(preset);
-  }
+  setColor(preset: ColorPreset) { this.themeService.setPrimaryColor(preset); }
 
   updateGradient(event: Event) {
     const target = event.target as HTMLInputElement;

@@ -1,0 +1,120 @@
+<div class="page-container" [appFlipTrigger]="'roles-page'">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title font-black">Roles del Sistema</h1>
+      <p class="page-subtitle text-muted small">Configura los niveles de acceso y permisos de seguridad</p>
+    </div>
+  </header>
+
+  <div class="grid grid--3">
+    @for (role of roles(); track role.id) {
+      <div class="card role-card" [class.role-card--admin]="role.name === 'Admin'">
+        <div class="card__header">
+          <h3 class="card__title">{{ role.name }}</h3>
+          <div class="role-badge" [class.role-badge--system]="role.name === 'Admin'">
+            {{ role.name === 'Admin' ? 'Sistema' : 'Personalizado' }}
+          </div>
+        </div>
+        <div class="card__body">
+          <p class="text-sm text-muted mb-4">{{ role.description || 'Sin descripción' }}</p>
+          
+          <div class="permissions-list">
+            <span class="text-xs text-bold mb-2 block">Permisos ({{ role.permissions.length }}):</span>
+            <div class="chips-container">
+              @for (p of role.permissions.slice(0, 5); track p.id) {
+                <span class="chip chip--sm">{{ p.name }}</span>
+              }
+              @if (role.permissions.length > 5) {
+                <span class="chip chip--sm chip--outline">+{{ role.permissions.length - 5 }} más</span>
+              }
+              @if (role.permissions.length === 0) {
+                <span class="text-xs italic text-muted">Sin permisos asignados</span>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="card__footer flex justify-end gap-2">
+          <button class="btn btn--secondary btn--sm" (click)="editRole(role)">Editar</button>
+          @if (role.name !== 'Admin' && role.name !== 'SystemAdmin') {
+            <button class="btn btn--danger btn--sm" (click)="confirmDelete(role)">Eliminar</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Modal Role -->
+  @if (showModal()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal modal--lg" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h3>{{ editingRole() ? 'Editar Rol' : 'Nuevo Rol' }}</h3>
+          <button class="btn-icon" (click)="$event.stopPropagation(); closeModal()">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="form-group">
+            <label>Nombre del Rol *</label>
+            <input type="text" [(ngModel)]="roleForm.name" placeholder="Ej: Supervisor de Almacén" class="form-control" [class.is-invalid]="submitted() && !roleForm.name" [disabled]="editingRole()?.name === 'Admin'">
+            @if (submitted() && !roleForm.name) {
+              <div class="error-msg">El nombre es obligatorio</div>
+            }
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <textarea [(ngModel)]="roleForm.description" placeholder="Describe las responsabilidades de este rol" class="form-control" rows="2"></textarea>
+          </div>
+
+          <div class="permissions-selector" [class.is-invalid]="submitted() && roleForm.permissionIds.length === 0">
+            <label class="block mb-2">Asignar Permisos *</label>
+            @if (submitted() && roleForm.permissionIds.length === 0) {
+              <div class="error-msg mb-2">Debes seleccionar al menos un permiso</div>
+            }
+            <div class="permissions-grid">
+              @for (p of allPermissions(); track p.id) {
+                <div class="permission-item" [class.permission-item--selected]="isPermissionSelected(p.id)" (click)="togglePermission(p.id)">
+                  <div class="permission-check">
+                    @if (isPermissionSelected(p.id)) { <span>✓</span> }
+                  </div>
+                  <div>
+                    <div class="permission-name">{{ p.name }}</div>
+                    <div class="permission-desc">{{ p.description }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" (click)="closeModal()">Cancelar</button>
+          <button class="btn btn--primary" (click)="saveRole()" [disabled]="submitted() && (!roleForm.name || roleForm.permissionIds.length === 0)">
+            {{ editingRole() ? 'Actualizar Rol' : 'Crear Rol' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Confirm Delete / Password -->
+  @if (confirmDeleteModal()) {
+    <div class="modal-backdrop" (click)="confirmDeleteModal.set(false)">
+      <div class="modal modal--sm" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h3 class="text-danger">⚠️ Confirmar Eliminación</h3>
+        </div>
+        <div class="modal__body">
+          <p>¿Estás seguro de que deseas eliminar el rol <strong>{{ roleToDelete()?.name }}</strong>?</p>
+          <p class="text-xs text-muted mt-2">Esta acción no se puede deshacer y los usuarios con este rol perderán sus accesos.</p>
+          
+          <div class="form-group mt-4">
+            <label>Confirma con tu contraseña</label>
+            <input type="password" [(ngModel)]="confirmPassword" placeholder="Tu contraseña de administrador" class="form-control">
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" (click)="confirmDeleteModal.set(false)">Cancelar</button>
+          <button class="btn btn--danger" (click)="performDelete()" [disabled]="!confirmPassword">Eliminar Definitivamente</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

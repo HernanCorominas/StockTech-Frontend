@@ -1,0 +1,150 @@
+<div class="overlay" [class.active]="showForm" (click)="closeForm()"></div>
+<div class="page-header" [class.v-hidden]="showForm">
+  <div>
+    <h1 class="font-black">Ventas</h1>
+    <p class="text-muted small">Gestión de comprobantes fiscales • {{ invoices.length }} registros</p>
+  </div>
+</div>
+
+<div *ngIf="loading" class="spinner"></div>
+
+<div class="card overflow-hidden" *ngIf="!loading" [class.v-hidden]="showForm">
+   <table class="data-table">
+      <thead>
+        <tr>
+          <th width="140">No. Factura</th>
+          <th>Cliente / RNC</th>
+          <th>Sucursal</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th class="text-right">Total (ITBIS Inc.)</th>
+          <th width="120"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inv of invoices" class="hover:bg-[var(--bg-primary)] transition-colors">
+          <td><span class="badge badge--secondary font-mono tracking-tighter">{{ inv.invoiceNumber }}</span></td>
+          <td>
+            <div class="font-black text-primary">{{ inv.clientName }}</div>
+            <div class="text-[10px] text-muted font-bold uppercase">{{ inv.clientDocument || 'RNC No Registrado' }}</div>
+          </td>
+          <td><span class="text-xs font-bold text-muted uppercase">{{ inv.branchName || 'Sede Central' }}</span></td>
+          <td class="text-xs font-bold">{{ inv.invoiceDate | date:'dd MMM, yyyy HH:mm' }}</td>
+          <td>
+            <span class="badge"
+              [class.badge--success]="inv.status === InvoiceStatus.Paid"
+              [class.badge--warning]="inv.status === InvoiceStatus.Pending"
+              [class.badge--danger]="inv.status === InvoiceStatus.Cancelled">
+              {{ inv.status === InvoiceStatus.Paid ? 'Pagada' :
+                 inv.status === InvoiceStatus.Pending ? 'Pendiente' : 'Anulada' }}
+            </span>
+          </td>
+          <td class="font-black text-success text-right text-lg">RD$ {{ inv.total | number:'1.2-2' }}</td>
+          <td class="text-right" style="display:flex; gap:6px; justify-content:flex-end;">
+            <button class="btn btn--secondary btn--sm" (click)="downloadPdf(inv)" [disabled]="pdfLoadingIds.has(inv.id)">
+              {{ pdfLoadingIds.has(inv.id) ? '...' : '📄 PDF' }}
+            </button>
+            <button *ngIf="inv.status !== InvoiceStatus.Cancelled"
+              class="btn btn--sm" style="background:var(--danger-alpha);color:var(--danger);border:1px solid var(--danger);"
+              (click)="cancelInvoice(inv)" [disabled]="cancellingIds.has(inv.id)">
+              {{ cancellingIds.has(inv.id) ? '...' : 'Anular' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+   </table>
+</div>
+
+<!-- Inline Form Panel (Arctic Morph) -->
+<div class="inline-form-panel" [class.active]="showForm">
+  <div class="inline-form-panel__header" [attr.data-flip-id]="'btn-new-invoice'">
+    <div>
+      <h3 class="font-black text-primary">Generar Factura</h3>
+      <p class="text-muted small">Emisión de documento legal</p>
+    </div>
+    <button class="btn btn--ghost btn--sm" (click)="closeForm()" [disabled]="saving">✕</button>
+  </div>
+  <div class="inline-form-panel__body">
+     <div *ngIf="error" class="alert alert--danger">{{ error }}</div>
+     
+     <!-- Stock validation warnings -->
+     <div *ngIf="stockWarnings.length > 0" class="alert alert--warning" style="margin-bottom: 16px;">
+       <strong>⚠️ Stock insuficiente para:</strong>
+       <ul style="margin: 6px 0 0 16px; font-size: 0.8rem;">
+         <li *ngFor="let w of stockWarnings">{{ w }}</li>
+       </ul>
+     </div>
+     
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 bg-[var(--bg-primary)] p-5 rounded-2xl border border-[var(--border-subtle)]">
+        <div class="form-group mb-0">
+          <label class="text-[10px] uppercase font-black tracking-widest text-muted">Cliente Registrado</label>
+          <select [(ngModel)]="clientId" (change)="customerName=''; customerDocument=''" class="form-control">
+            <option value="">-- Seleccionar --</option>
+            <option value="NULL">Consumidor Final (Sin Datos)</option>
+            <option *ngFor="let c of clients" [value]="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-0" *ngIf="!clientId || clientId === 'NULL'">
+          <label class="text-[10px] uppercase font-black tracking-widest text-muted">Nombre/Documento POS</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" [(ngModel)]="customerName" class="form-control" placeholder="Nombre" />
+            <input type="text" [(ngModel)]="customerDocument" class="form-control" placeholder="Cédula/RNC" />
+          </div>
+        </div>
+
+        <div class="form-group mb-0 md:col-span-2">
+          <label class="text-[10px] uppercase font-black tracking-widest text-muted">Notas / Observaciones</label>
+          <input type="text" [(ngModel)]="notes" class="form-control" placeholder="Opcional..." />
+        </div>
+     </div>
+
+     <div style="margin-top: 32px">
+        <div class="flex-between mb-4">
+           <h4 class="font-black text-primary">Líneas de Detalle</h4>
+           <button class="btn btn--secondary btn--sm" (click)="addLine()">+ Item</button>
+        </div>
+        
+        <div class="space-y-2">
+          <div *ngFor="let line of items; let i = index" class="flex items-center gap-3 p-3 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-subtle)] animate-fade-in">
+             <select [(ngModel)]="line.productId" (ngModelChange)="onProductSelect(line)" class="form-control" style="flex:4">
+                <option value="">Seleccionar Producto...</option>
+                <option *ngFor="let p of products" [value]="p.id"
+                  [style.color]="p.stock <= 0 ? 'var(--danger)' : 'inherit'">
+                  {{ p.name }} • Stock: {{ p.stock }}{{ p.stock <= 0 ? ' ⚠️' : '' }}
+                </option>
+             </select>
+             <input type="number" [(ngModel)]="line.quantity" (ngModelChange)="updateTotal()" placeholder="Cant." min="1" class="form-control" style="width:80px" />
+             <div style="width:120px; text-align:right" class="font-black text-primary text-sm">RD$ {{ (line.quantity * line.unitPrice) | number:'1.2-2' }}</div>
+             <button class="btn btn--ghost btn--sm text-danger" (click)="removeLine(i)">✕</button>
+          </div>
+        </div>
+        
+        <div *ngIf="items.length === 0" class="text-center py-12 border-2 border-dashed rounded-2xl border-[var(--border)] text-muted font-bold">
+          No hay productos en esta transacción.
+        </div>
+     </div>
+
+     <!-- Live Invoice Preview -->
+     <div *ngIf="items.length > 0" class="mt-8 p-6 rounded-2xl bg-[var(--primary-alpha)] border border-[var(--accent-dim)]">
+        <div class="flex-between mb-2">
+          <span class="text-muted text-xs font-black uppercase tracking-widest">Subtotal</span>
+          <span class="font-bold text-primary">RD$ {{ subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex-between mb-2">
+          <span class="text-muted text-xs font-black uppercase tracking-widest">ITBIS (18%)</span>
+          <span class="font-bold text-primary">RD$ {{ taxAmount | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex-between pt-3" style="border-top: 1px solid var(--border);">
+          <span class="text-muted uppercase tracking-widest font-black text-[10px]">Total a Pagar</span>
+          <div class="text-2xl font-black text-primary">RD$ {{ totalAmount | number:'1.2-2' }}</div>
+        </div>
+     </div>
+  </div>
+  <div class="inline-form-panel__footer bg-[var(--bg-primary)]">
+    <button class="btn btn--secondary" (click)="closeForm()">Cerrar</button>
+    <button class="btn btn--primary" (click)="save()" [disabled]="saving || items.length === 0 || stockWarnings.length > 0">
+      {{ saving ? 'Generando...' : 'Emitir Factura' }}
+    </button>
+  </div>
+</div>

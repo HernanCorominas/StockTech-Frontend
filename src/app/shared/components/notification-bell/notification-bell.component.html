@@ -1,0 +1,44 @@
+<div class="notification-root">
+  <button 
+    type="button" 
+    (click)="isMenuOpen.set(!isMenuOpen())"
+    class="bell-btn"
+    [class.bell-btn--active]="isMenuOpen()"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+    <span *ngIf="unreadCount() > 0" class="badge-container">
+      <span class="badge-ping"></span>
+      <span class="badge-dot">{{ unreadCount() }}</span>
+    </span>
+  </button>
+
+  <div *ngIf="isMenuOpen()" class="notification-dropdown animate-slide-up">
+    <div class="dropdown-header">
+      <h3>Notificaciones</h3>
+      <button (click)="markAsRead()" class="action-link">Marcar como leído</button>
+    </div>
+    
+    <div class="notification-list scrollbar-hide">
+      <div *ngIf="notifications().length === 0" class="empty-notifications">
+        <p>No tienes notificaciones</p>
+      </div>
+      
+      <div *ngFor="let notif of notifications(); track: notif.id" 
+           class="notification-item"
+           [class.notification-item--unread]="!notif.isRead"
+           [class.notification-item--low-stock]="notif.type === 'LowStock'">
+        <div class="item-header">
+          <span *ngIf="notif.type === 'LowStock'" class="type-tag">STOCK</span>
+          <p class="item-time">{{ notif.date | date:'HH:mm' }}</p>
+        </div>
+        <p class="item-message" [class.item-message--read]="notif.isRead">{{ notif.message }}</p>
+      </div>
+    </div>
+    
+    <div *ngIf="notifications().length > 0" class="dropdown-footer">
+      <button (click)="clearAll()" class="clear-btn">Limpiar historial</button>
+    </div>
+  </div>
+</div>
