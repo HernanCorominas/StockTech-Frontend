@@ -1,0 +1,30 @@
+<div class="pg-container">
+  <div class="pg-filters">
+    <div class="pg-categories">
+       <!-- Simplified: normally dynamic, keeping static or bound to unique categories -->
+       <button class="btn btn-chip active">Todos</button>
+    </div>
+  </div>
+
+  <div class="pg-grid">
+    <div class="product-card" *ngFor="let p of filteredProducts" (click)="add.emit(p)">
+       <!-- Placeholder for image -->
+       <div class="product-image">
+          <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="product-img" />
+          <div class="image-placeholder" *ngIf="!p.image">{{ p.name.charAt(0).toUpperCase() }}</div>
+          <div class="stock-badge" [class.out-of-stock]="p.stock <= 0">
+             {{ p.stock }} en stock
+          </div>
+       </div>
+       <div class="product-info">
+         <h4 class="product-name" [title]="p.name">{{ p.name }}</h4>
+         <div class="product-price">{{ p.price | currency }}</div>
+       </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="filteredProducts.length === 0">
+       No se encontraron productos.
+    </div>
+  </div>
+</div>
